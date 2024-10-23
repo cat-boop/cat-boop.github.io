@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>// IT357 ReFS Presentation</title>
+        <!-- Favicon-->
+        <link rel="icon" type="image/x-icon" href="favicon.ico" />
+        <!-- Core theme CSS (includes Bootstrap)-->
+        <link href="css/styles.css" rel="stylesheet" />
+    </head>
+    <body>
+        <!-- Page Content-->
+        <div class="container px-4 px-lg-5">
+            <!-- Heading Row-->
+            <div class="row gx-4 gx-lg-5 align-items-center my-5">
+                <div class="col-lg-7"><img class="img-fluid rounded mb-4 mb-lg-0" src="https://www.ntfs.com/images/screenshots/refs.png" alt="..." /></div>
+                <div class="col-lg-5">
+                    <h1 class="font-weight-light">Brief Introduction to <b>ReFS</b>!</h1>
+                    <p><b>ReFS</b> (aka The Resilient File System) is a file system developed by Microsoft that introduces higher data availability and larger scale data sets while maintaining data integrity. The most important innovation that <b>ReFS</b> has brought to the industry is <i>high data protection from corruption.</i> It is compatibile with all Windows 10 and 11 computers. </p>
+                    <a class="btn btn-primary" href="https://learn.microsoft.com/en-us/windows-server/storage/refs/refs-overview">Check out Microsoft's article on <b>ReFS</b>!</a>
+                </div>
+            </div>
+            <!-- Call to Action-->
+            <div class="card text-white bg-secondary my-5 py-4 text-center" id="calltoaction">
+                <div class="card-body"><p class="text-white m-0"></p></div>
+            </div>
+            <!-- Content Row-->
+            <div class="row gx-4 gx-lg-5">
+                <div class="col-md-4 mb-5">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h2 class="card-title">What uses <b>ReFS</b>?</h2>
+                            <p class="card-text">Windows OS (primarily 8 or later) all feature this technology. However, Windows Server (2012 or later) supports it as well; Windows Server is the most applicable situation for <b>ReFS</b> to shine.</p>
+                        </div>
+                       
+                    </div>
+                </div>
+                <div class="col-md-4 mb-5">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h2 class="card-title">What are its components?</h2>
+                            <p class="card-text"><b>ReFS</b> features a super interesting property called checksums that allows it to automatically correct any data corruption on its own! Some of its other components include block-level cloning, snapshots, volume shadow copying, and Hyper-V. Most of these are used for data resiliency.</p>
+                        </div>
+                 
+                    </div>
+                </div>
+                <div class="col-md-4 mb-5">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h2 class="card-title">What makes it unique?</h2>
+                            <p class="card-text"><b>ReFS</b> is particularly useful in virtualization environments, backup/disaster recovery, and large-scale storage solutions. Because of its data resiliency properties and efficient auto correction features, it is used by cloud providers and data centers.</p>
+                        </div>
+                      
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Footer-->
+        <footer class="py-5 bg-dark">
+            <div class="container px-4 px-lg-5"><p class="m-0 text-center text-white">Website made by Adam Lower on 10/23/2024 for IT357-DL1 Classwork 5.</p></div>
+        </footer>
+        <!-- Bootstrap core JS-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Core theme JS-->
+        <script src="js/scripts.js"></script>
+    </body>
+    <script>
+        function detectOS() {
+            let userAgent = window.navigator.userAgent;
+            if (userAgent.indexOf("Windows NT") !== -1) {
+                return "Windows";
+            } else {
+                return "Other";
+            }
+        }
+
+        function updateCallToAction() {
+            let os = detectOS();
+            let callToActionDiv = document.getElementById("calltoaction");
+            let callToActionText = callToActionDiv.querySelector(".card-body p");
+
+            if (os === "Windows") {
+                callToActionDiv.classList.remove("bg-secondary");
+                callToActionDiv.classList.add("bg-success");
+                callToActionText.textContent = "Since you are accessing this website on a Windows computer (version 8 or later), you are able to utilize ReFS yourself!";
+            } else {
+                callToActionDiv.classList.remove("bg-secondary");
+                callToActionDiv.classList.add("bg-danger");
+                callToActionText.textContent = "Oh no! You are not on a Windows computer, so you cannot use ReFS.";
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", updateCallToAction);
+    </script>
+</html>
