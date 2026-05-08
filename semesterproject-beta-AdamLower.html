@@ -1,0 +1,1257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tesla App - High Contrast</title>
+<style>
+/* =============================================
+   DESIGN TOKENS - HIGH CONTRAST & HIGH VIS
+============================================= */
+:root {
+  --bg-outer:       #000000;
+  --bg-frame:       #000000;
+  --bg-card:        #000000;
+  --bg-card-inner:  #111111;
+  --bg-input:       #000000;
+  --bg-pill:        #333333;
+  --bg-nav:         #000000;
+  --bg-tab-active:  #333333;
+  --bg-circle:      #111111;
+  --bg-btn-white:   #ffffff;
+  --bg-btn-blue:    #1a66ff;
+
+  --border-frame:   #ffffff;
+  --border-card:    #ffffff;
+  --border-input:   #ffffff;
+
+  --text-white:     #ffffff;
+  --text-muted:     #cccccc;
+  --text-dim:       #aaaaaa;
+  --text-blue:      #4d94ff;
+  --text-black:     #000000;
+
+  --font: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  --radius-frame:   22px;
+  --radius-card:    16px;
+  --radius-input:   12px;
+  --radius-full:    9999px;
+}
+
+/* =============================================
+   RESET
+============================================= */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{
+  height:100%;
+  background:var(--bg-outer);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:var(--font);
+  -webkit-font-smoothing:antialiased;
+}
+
+/* =============================================
+   DEVICE FRAME
+============================================= */
+.device{
+  width:600px;
+  height:430px;
+  background:var(--bg-outer);
+  border-radius:28px;
+  border:3px solid var(--border-frame);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  position:relative;
+  box-shadow:0 40px 100px rgba(255,255,255,.1);
+}
+
+/* =============================================
+   CONTENT AREA
+============================================= */
+.content{
+  flex:1;
+  background:var(--bg-frame);
+  overflow:hidden;
+  position:relative;
+  margin:12px 12px 0;
+  border-radius:var(--radius-frame) var(--radius-frame) 0 0;
+}
+
+.screen{
+  position:absolute;
+  inset:0;
+  padding:24px;
+  display:none;
+  overflow:hidden;
+}
+.screen.active{display:block;}
+
+/* =============================================
+   NAV SCREEN
+============================================= */
+#screen-nav.active{
+  display:flex;
+  flex-direction:column;
+}
+.nav-card{
+  background:var(--bg-card);
+  border: 2px solid var(--border-card);
+  border-radius:var(--radius-card);
+  padding:20px;
+  width:280px;
+}
+.nav-card__title{
+  font-size:17px;
+  font-weight:700;
+  color:var(--text-white);
+  margin-bottom:14px;
+}
+.nav-search{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:var(--bg-input);
+  border: 2px solid var(--border-input);
+  border-radius:10px;
+  padding:12px 14px;
+  margin-bottom:16px;
+}
+.nav-search__dot{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:var(--text-white);
+  flex-shrink:0;
+}
+.nav-search__input{
+  background: transparent;
+  border: none;
+  color: var(--text-white);
+  font-size: 15px;
+  flex: 1;
+  outline: none;
+  font-family: var(--font);
+}
+.nav-search__input::placeholder{
+  color:var(--text-muted);
+}
+.nav-divider{
+  height:2px;
+  background:var(--border-card);
+  margin-bottom:14px;
+}
+.nav-section-label{
+  font-size:10px;
+  font-weight:600;
+  color:var(--text-muted);
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+  margin-bottom:12px;
+}
+.nav-favorite{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  background:var(--bg-card-inner);
+  border: 2px solid var(--border-card);
+  border-radius:12px;
+  padding:12px 14px;
+  cursor: pointer;
+}
+.nav-favorite__icon{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  background:var(--text-blue);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+.nav-favorite__icon svg{
+  width:20px;height:20px;
+  fill:none;stroke:#000;stroke-width:2.5;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.nav-favorite__name{
+  font-size:15px;
+  font-weight:600;
+  color:var(--text-white);
+  line-height:1.2;
+}
+.nav-favorite__detail{
+  font-size:12px;
+  color:var(--text-muted);
+  margin-top:2px;
+}
+
+.nav-route-card{
+  background:var(--bg-card);
+  border: 2px solid var(--border-card);
+  border-radius:var(--radius-card);
+  padding:18px 20px;
+  width:300px;
+}
+.nav-route__top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  margin-bottom:4px;
+}
+.nav-route__time{
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+}
+.nav-route__mins{
+  font-size:36px;
+  font-weight:700;
+  color:var(--text-white);
+  line-height:1;
+}
+.nav-route__min-label{
+  font-size:16px;
+  font-weight:400;
+  color:var(--text-white);
+}
+.nav-route__end-btn{
+  background:var(--bg-pill);
+  border: 2px solid var(--border-card);
+  color:var(--text-white);
+  font-size:13px;
+  font-weight:600;
+  border-radius:var(--radius-full);
+  padding:6px 16px;
+  cursor:pointer;
+  letter-spacing:.2px;
+}
+.nav-route__distance{
+  font-size:14px;
+  font-weight:600;
+  color:var(--text-blue);
+  margin-bottom:14px;
+}
+.nav-route__turn{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  background:var(--bg-card-inner);
+  border: 2px solid var(--border-card);
+  border-radius:12px;
+  padding:14px;
+}
+.nav-route__turn-icon{
+  width:36px;
+  height:36px;
+  background:var(--text-blue);
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+.nav-route__turn-icon svg{
+  width:18px;height:18px;fill:#000;
+}
+.nav-route__turn-label{
+  font-size:11px;
+  color:var(--text-muted);
+  margin-bottom:4px;
+  font-weight:500;
+}
+.nav-route__turn-street{
+  font-size:16px;
+  font-weight:600;
+  color:var(--text-white);
+  line-height:1.3;
+}
+
+.nav-bg-arrow{
+  position:absolute;
+  right:80px;
+  top:50%;
+  transform:translateY(-50%);
+  opacity:.15;
+}
+.nav-bg-arrow svg{width:160px;height:160px;fill:var(--text-white);}
+
+/* =============================================
+   AUDIO SCREEN
+============================================= */
+#screen-audio.active{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  padding:20px 24px;
+}
+.audio-header{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:16px;
+}
+.audio-title{
+  font-size:17px;
+  font-weight:700;
+  color:var(--text-white);
+}
+.audio-settings-btn{
+  width:34px;height:34px;
+  border-radius:50%;
+  background:var(--bg-pill);
+  border: 2px solid var(--border-card);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  color:var(--text-white);
+}
+.audio-settings-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;}
+.audio-artwork{
+  width:160px;height:160px;
+  background:var(--bg-card);
+  border: 2px solid var(--border-card);
+  border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:20px;
+  flex-shrink:0;
+}
+.audio-artwork svg{width:52px;height:52px;fill:none;stroke:var(--text-white);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+.audio-song{
+  font-size:20px;
+  font-weight:700;
+  color:var(--text-white);
+  text-align:center;
+  margin-bottom:4px;
+}
+.audio-artist{
+  font-size:13px;
+  color:var(--text-blue);
+  text-align:center;
+  margin-bottom:20px;
+}
+.audio-controls{
+  display:flex;
+  align-items:center;
+  gap:28px;
+  margin-bottom:22px;
+}
+.audio-ctrl-btn{
+  background:none;
+  border:none;
+  cursor:pointer;
+  color:var(--text-white);
+  display:flex;align-items:center;justify-content:center;
+  padding:0;
+}
+.audio-ctrl-btn svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.audio-play-btn{
+  width:56px;height:56px;
+  border-radius:50%;
+  background:var(--text-white);
+  border: 2px solid var(--text-white);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  flex-shrink:0;
+}
+.audio-play-btn svg{width:22px;height:22px;fill:#000;margin-left:3px;}
+.audio-volume{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width:100%;
+}
+.audio-vol-icon{color:var(--text-white);}
+.audio-vol-icon svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.audio-slider-wrap{flex:1;position:relative;height:6px;cursor:pointer;}
+.audio-slider-track{
+  height:6px;border-radius:3px;
+  background:var(--bg-pill);
+  border: 1px solid #555;
+  position:relative;
+}
+.audio-slider-fill{
+  position:absolute;
+  left:0;top:0;bottom:0;
+  width:50%;
+  background:var(--text-blue);
+  border-radius:3px;
+}
+.audio-slider-thumb{
+  position:absolute;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  width:20px;height:20px;
+  border-radius:50%;
+  background:var(--text-white);
+  border: 2px solid #000;
+}
+.audio-vol-pct{
+  font-size:13px;
+  font-weight:bold;
+  color:var(--text-white);
+  white-space:nowrap;
+  min-width:34px;
+  text-align:right;
+}
+
+/* =============================================
+   CLIMATE SCREEN
+============================================= */
+#screen-climate.active{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  padding:16px;
+}
+.climate-left{
+  background:var(--bg-card);
+  border: 2px solid var(--border-card);
+  border-radius:var(--radius-card);
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:14px;
+}
+.climate-zone-label{
+  font-size:11px;
+  font-weight:700;
+  color:var(--text-white);
+  letter-spacing:2px;
+  text-transform:uppercase;
+  text-align:center;
+}
+.climate-temp-row{
+  display:flex;
+  align-items:center;
+  gap:20px;
+}
+.climate-temp-btn{
+  width:52px;height:52px;
+  border-radius:50%;
+  background:var(--bg-card-inner);
+  border: 2px solid var(--border-card);
+  color:var(--text-white);
+  font-size:26px;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  line-height:1;
+}
+.climate-temp-display{
+  display:flex;
+  align-items:flex-start;
+}
+.climate-temp-num{
+  font-size:72px;
+  font-weight:400;
+  color:var(--text-white);
+  line-height:1;
+  letter-spacing:-2px;
+}
+.climate-temp-deg{
+  font-size:22px;
+  color:var(--text-white);
+  margin-top:12px;
+}
+.climate-badge{
+  background:var(--bg-pill);
+  border: 1px solid var(--border-card);
+  border-radius:var(--radius-full);
+  padding:7px 18px;
+  font-size:13px;
+  font-weight: 600;
+  color:var(--text-white);
+}
+
+.climate-right{
+  background:var(--bg-card);
+  border: 2px solid var(--border-card);
+  border-radius:var(--radius-card);
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.climate-modes-label{
+  font-size:11px;
+  font-weight:700;
+  color:var(--text-white);
+  letter-spacing:2px;
+  text-transform:uppercase;
+  margin-bottom:4px;
+}
+.climate-mode-row{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  background:var(--bg-card-inner);
+  border: 2px solid var(--border-card);
+  border-radius:12px;
+  padding:16px;
+  flex:1;
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+.climate-mode-row.active {
+  background: rgba(77, 148, 255, 0.15);
+  border-color: var(--text-blue);
+}
+.climate-mode-icon svg{
+  width:22px;height:22px;
+  fill:none;stroke:var(--text-white);stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.climate-mode-name{
+  font-size:15px;
+  font-weight:600;
+  color:var(--text-white);
+  flex:1;
+}
+/* Radio button */
+.climate-radio{
+  width:22px;height:22px;
+  border-radius:50%;
+  border:2px solid #fff;
+  flex-shrink:0;
+  transition: background .2s, box-shadow .2s;
+}
+.climate-radio.checked {
+  background: var(--text-white);
+  box-shadow: inset 0 0 0 4px #000;
+}
+/* Toggle */
+.climate-lock-row{
+  display:flex;
+  align-items:flex-start;
+  gap:14px;
+  background:var(--bg-card-inner);
+  border: 2px solid var(--border-card);
+  border-radius:12px;
+  padding:16px;
+  flex:1;
+}
+.climate-lock-icon svg{
+  width:22px;height:22px;
+  fill:none;stroke:var(--text-white);stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.climate-lock-text{flex:1;}
+.climate-lock-name{
+  font-size:15px;font-weight:600;color:var(--text-white);
+  margin-bottom:2px;
+}
+.climate-lock-sub{
+  font-size:12px;color:var(--text-muted);font-weight:bold;
+}
+.toggle{
+  width:44px;height:26px;
+  border-radius:var(--radius-full);
+  background:#000;
+  border: 2px solid #fff;
+  position:relative;
+  cursor:pointer;
+  flex-shrink:0;
+  transition:background .2s;
+}
+.toggle::after{
+  content:'';
+  position:absolute;
+  top:2px;left:2px;
+  width:18px;height:18px;
+  border-radius:50%;
+  background:var(--text-white);
+  transition:transform .2s;
+}
+.toggle.on{background:var(--text-white);}
+.toggle.on::after{transform:translateX(18px);background:#000;}
+
+/* =============================================
+   VEHICLE SCREEN
+============================================= */
+#screen-vehicle.active{
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:16px;
+}
+.seg-control{
+  display:flex;
+  background:var(--bg-card);
+  border: 2px solid var(--border-card);
+  border-radius:var(--radius-full);
+  padding:3px;
+  width:280px;
+}
+.seg-btn{
+  flex:1;
+  padding:9px 0;
+  border:none;
+  border-radius:var(--radius-full);
+  background:transparent;
+  color:var(--text-muted);
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.8px;
+  text-transform:uppercase;
+  cursor:pointer;
+  transition:background .15s,color .15s;
+}
+.seg-btn.active{
+  background:var(--bg-pill);
+  color:var(--text-white);
+  border: 1px solid var(--text-white);
+}
+
+.vehicle-access-card, .vehicle-seating-card{
+  background:var(--bg-card);
+  border: 2px solid var(--border-card);
+  border-radius:var(--radius-card);
+  width:480px;
+  max-width:100%;
+  padding:20px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:20px;
+}
+.vehicle-car-circle{
+  width:200px;height:200px;
+  border-radius:50%;
+  background:var(--bg-circle);
+  border: 2px solid #555;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.vehicle-car-circle svg{
+  width:90px;height:90px;
+  fill:none;stroke:var(--text-white);stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.vehicle-trunk-btn, .seating-save-btn{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  border-radius:12px;
+  padding:16px;
+  font-size:16px;
+  font-weight:700;
+  cursor:pointer;
+  border: 2px solid var(--text-white);
+}
+.vehicle-trunk-btn {
+  background:var(--bg-btn-white);
+  color:var(--text-black);
+}
+.vehicle-trunk-btn svg{
+  width:20px;height:20px;
+  fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+
+.seating-title{
+  font-size:22px;font-weight:700;color:var(--text-white);
+}
+.seating-sub{
+  font-size:14px;font-weight:bold;color:var(--text-muted);margin-top:4px;
+}
+.seating-recline-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.seating-recline-icon{
+  width:32px;height:32px;
+  background:var(--bg-pill);
+  border: 1px solid var(--border-card);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.seating-recline-icon svg{
+  width:16px;height:16px;
+  fill:none;stroke:var(--text-white);stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.seating-recline-label{
+  font-size:15px;font-weight:700;color:var(--text-white);flex:1;
+}
+.seating-recline-pct{
+  font-size:15px;font-weight:700;color:var(--text-white);
+}
+.seating-slider-wrap{
+  position:relative;height:6px;
+  background:#333;
+  border-radius:3px;
+  margin:0 0 4px;
+  cursor: pointer;
+}
+.seating-slider-fill-left{
+  position:absolute;left:0;top:0;bottom:0;
+  width:50%;background:var(--text-blue);border-radius:3px;
+}
+.seating-slider-fill-right{
+  position:absolute;left:50%;top:0;bottom:0;
+  right:0;background:#333;border-radius:3px;
+}
+.seating-slider-thumb{
+  position:absolute;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  width:22px;height:22px;
+  border-radius:50%;
+  background:var(--text-white);
+  border: 2px solid #000;
+}
+.seating-save-btn{
+  background:var(--bg-btn-blue);
+  color:var(--text-white);
+  border: 2px solid #000;
+}
+.seating-save-btn svg{
+  width:20px;height:20px;
+  fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+
+.vehicle-trunk-btn.open{
+  background:#22c55e;
+  color:#000;
+  border-color: #22c55e;
+}
+.vehicle-car-circle.open{
+  border-color: #22c55e;
+}
+.seating-save-btn.saved{
+  background:#22c55e;
+}
+
+/* =============================================
+   BOTTOM NAV BAR
+============================================= */
+.bottom-nav{
+  height:80px;
+  background:var(--bg-nav);
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-around;
+  padding-top:14px;
+  border-top:2px solid var(--border-frame);
+  flex-shrink:0;
+}
+.nav-tab{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+  flex:1;
+  background:none;
+  border:none;
+  cursor:pointer;
+  color:var(--text-dim);
+  transition:color .15s;
+  padding:0;
+}
+.nav-tab svg{
+  width:24px;height:24px;
+  fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.nav-tab__label{
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+}
+.nav-tab.active{
+  color:var(--text-white);
+}
+
+/* =============================================
+   RESPONSIVE
+============================================= */
+@media (max-width:680px){
+  body{align-items:flex-start;padding:0;}
+  .device{
+    width:100vw;height:100dvh;
+    border-radius:0;
+    border:none;
+    box-shadow:none;
+  }
+  .content{margin:0;border-radius:0;border:none;}
+  .bottom-nav{border-top: 2px solid #333;}
+  .vehicle-access-card,.vehicle-seating-card{width:100%;}
+  #screen-climate.active{grid-template-columns:1fr;}
+  .climate-left,.climate-right{min-height:auto;}
+}
+@media (max-width:1024px) and (min-width:681px){
+  .device{width:90vw;max-width:700px;height:85vh;max-height:500px;}
+}
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="content">
+
+    <section id="screen-nav" class="screen active" aria-label="Navigation">
+      <div class="nav-bg-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+      </div>
+
+      <div id="nav-idle">
+        <div class="nav-card">
+          <div class="nav-card__title">Navigation</div>
+          <form class="nav-search" id="nav-search-form" role="search">
+            <div class="nav-search__dot"></div>
+            <input type="text" id="nav-input" class="nav-search__input" placeholder="Navigate..." required>
+          </form>
+          <div class="nav-divider"></div>
+          <div class="nav-section-label">Favorites</div>
+          <div class="nav-favorite" id="nav-fav-home">
+            <div class="nav-favorite__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div>
+              <div class="nav-favorite__name">Home</div>
+              <div class="nav-favorite__detail">123 Main St &bull; 15 min ETA</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="nav-active" style="display:none;">
+        <div class="nav-route-card">
+          <div class="nav-route__top">
+            <div class="nav-route__time">
+              <span class="nav-route__mins">15</span>
+              <span class="nav-route__min-label">min</span>
+            </div>
+            <button class="nav-route__end-btn" id="nav-end-btn">END</button>
+          </div>
+          <div class="nav-route__distance">4.2 mi &bull; 12:45 PM</div>
+          <div class="nav-route__turn">
+            <div class="nav-route__turn-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            </div>
+            <div>
+              <div class="nav-route__turn-label">Next Turn</div>
+              <div class="nav-route__turn-street" id="nav-dest-street">Head north on Main St</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-audio" class="screen" aria-label="Audio / Media Player">
+      <div class="audio-header">
+        <span class="audio-title">Media Player</span>
+        <button class="audio-settings-btn" aria-label="Audio settings">
+          <svg viewBox="0 0 24 24">
+            <line x1="4" y1="6" x2="20" y2="6"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="18" x2="20" y2="18"/>
+            <circle cx="8" cy="6" r="2" fill="#fff" stroke="none"/>
+            <circle cx="16" cy="12" r="2" fill="#fff" stroke="none"/>
+            <circle cx="10" cy="18" r="2" fill="#fff" stroke="none"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="audio-artwork" role="img" aria-label="Album artwork placeholder">
+        <svg viewBox="0 0 24 24">
+          <path d="M9 18V5l12-2v13"/>
+          <circle cx="6" cy="18" r="3"/>
+          <circle cx="18" cy="16" r="3"/>
+        </svg>
+      </div>
+
+      <div class="audio-song">Midnight City</div>
+      <div class="audio-artist">M83 &bull; Hurry Up, We're Dreaming</div>
+
+      <div class="audio-controls" role="group" aria-label="Playback controls">
+        <button class="audio-ctrl-btn" aria-label="Previous track">
+          <svg viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+        </button>
+        <button class="audio-play-btn" id="play-btn" aria-label="Play" aria-pressed="false">
+          <svg id="play-icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </button>
+        <button class="audio-ctrl-btn" aria-label="Next track">
+          <svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+        </button>
+      </div>
+
+      <div class="audio-volume" role="group" aria-label="Volume control">
+        <div class="audio-vol-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </div>
+        <div class="audio-slider-wrap" id="vol-slider" role="slider" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" aria-label="Volume">
+          <div class="audio-slider-track">
+            <div class="audio-slider-fill" id="vol-fill"></div>
+            <div class="audio-slider-thumb" id="vol-thumb"></div>
+          </div>
+        </div>
+        <div class="audio-vol-pct" id="vol-val">50%</div>
+      </div>
+    </section>
+
+    <section id="screen-climate" class="screen" aria-label="Climate control">
+      <div class="climate-left">
+        <div class="climate-zone-label">Driver Zone</div>
+        <div class="climate-temp-row">
+          <button class="climate-temp-btn" id="temp-minus" aria-label="Decrease temperature">&#8722;</button>
+          <div class="climate-temp-display" aria-live="polite" aria-label="Current temperature">
+            <span class="climate-temp-num" id="temp-val">72</span>
+            <span class="climate-temp-deg">°</span>
+          </div>
+          <button class="climate-temp-btn" id="temp-plus" aria-label="Increase temperature">&#43;</button>
+        </div>
+        <div class="climate-badge">Auto &bull; Synchronized</div>
+      </div>
+
+      <div class="climate-right">
+        <div class="climate-modes-label">Climate Modes</div>
+
+        <div class="climate-mode-row" id="defrost-btn">
+          <div class="climate-mode-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M9 2v6M9 16v6M15 2v6M15 16v6M2 9h6M16 9h6M2 15h6M16 15h6"/></svg>
+          </div>
+          <span class="climate-mode-name">Defrost Max</span>
+          <div class="climate-radio" id="defrost-radio" role="radio" aria-checked="false" tabindex="0"></div>
+        </div>
+
+        <div class="climate-lock-row">
+          <div class="climate-lock-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div class="climate-lock-text">
+            <div class="climate-lock-name">Rear Climate Lock</div>
+            <div class="climate-lock-sub">Secure back-seat temp</div>
+          </div>
+          <button class="toggle" id="climate-toggle" aria-pressed="false" aria-label="Toggle rear climate lock"></button>
+        </div>
+      </div>
+    </section>
+
+    <section id="screen-vehicle" class="screen" aria-label="Vehicle controls">
+      <div class="seg-control" role="tablist" aria-label="Vehicle sections">
+        <button class="seg-btn active" id="seg-access" role="tab" aria-selected="true" aria-controls="vehicle-access">ACCESS</button>
+        <button class="seg-btn" id="seg-seating" role="tab" aria-selected="false" aria-controls="vehicle-seating">SEATING</button>
+      </div>
+
+      <div id="vehicle-access" role="tabpanel">
+        <div class="vehicle-access-card">
+          <div class="vehicle-car-circle" id="trunk-graphic" aria-label="Vehicle illustration">
+            <svg id="trunk-closed-svg" viewBox="0 0 80 80" style="width:90px;height:90px;">
+              <rect x="8" y="38" width="64" height="22" rx="4" fill="none" stroke="var(--text-white)" stroke-width="1.6"/>
+              <path d="M18 38 Q22 22 38 20 L54 20 Q66 22 68 38Z" fill="none" stroke="var(--text-white)" stroke-width="1.6"/>
+              <path d="M38 22 Q50 21 60 30 L66 38 L38 38Z" fill="none" stroke="var(--text-white)" stroke-width="1.2" opacity=".6"/>
+              <path d="M20 38 L22 26 Q28 21 38 21 L38 38Z" fill="none" stroke="var(--text-white)" stroke-width="1.2" opacity=".6"/>
+              <path d="M8 42 Q8 38 12 38 L20 38" fill="none" stroke="var(--text-white)" stroke-width="1.6"/>
+              <path d="M68 42 Q72 42 72 46 L72 55 Q72 58 68 60" fill="none" stroke="var(--text-white)" stroke-width="1.6"/>
+              <circle cx="22" cy="60" r="10" fill="none" stroke="var(--text-white)" stroke-width="1.6"/>
+              <circle cx="22" cy="60" r="5" fill="none" stroke="var(--text-white)" stroke-width="1.2"/>
+              <circle cx="58" cy="60" r="10" fill="none" stroke="var(--text-white)" stroke-width="1.6"/>
+              <circle cx="58" cy="60" r="5" fill="none" stroke="var(--text-white)" stroke-width="1.2"/>
+              <line x1="38" y1="38" x2="38" y2="60" stroke="var(--text-white)" stroke-width="1" opacity=".5"/>
+            </svg>
+            <svg id="trunk-open-svg" viewBox="0 0 80 80" style="width:90px;height:90px;display:none;">
+              <rect x="8" y="38" width="64" height="22" rx="4" fill="none" stroke="#22c55e" stroke-width="2"/>
+              <path d="M18 38 Q22 22 38 20 L54 20 Q66 22 68 38Z" fill="none" stroke="#22c55e" stroke-width="2"/>
+              <path d="M38 22 Q50 21 60 30 L66 38 L38 38Z" fill="none" stroke="#22c55e" stroke-width="1.5" opacity=".8"/>
+              <path d="M20 38 L22 26 Q28 21 38 21 L38 38Z" fill="none" stroke="#22c55e" stroke-width="1.5" opacity=".8"/>
+              <path d="M8 38 Q6 30 10 22 L16 18" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round"/>
+              <rect x="8" y="38" width="12" height="4" rx="1" fill="rgba(34,197,94,0.3)" stroke="none"/>
+              <path d="M68 42 Q72 42 72 46 L72 55 Q72 58 68 60" fill="none" stroke="#22c55e" stroke-width="2"/>
+              <circle cx="22" cy="60" r="10" fill="none" stroke="#22c55e" stroke-width="2"/>
+              <circle cx="22" cy="60" r="5" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+              <circle cx="58" cy="60" r="10" fill="none" stroke="#22c55e" stroke-width="2"/>
+              <circle cx="58" cy="60" r="5" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+              <line x1="38" y1="38" x2="38" y2="60" stroke="#22c55e" stroke-width="1.5" opacity=".8"/>
+              <circle cx="68" cy="18" r="9" fill="#22c55e"/>
+              <polyline points="63,18 67,22 73,13" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <button class="vehicle-trunk-btn" id="trunk-btn" aria-label="Open rear trunk" aria-pressed="false">
+            <svg id="trunk-btn-icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            <span id="trunk-btn-label">Open Rear Trunk</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="vehicle-seating" role="tabpanel" style="display:none;">
+        <div class="vehicle-seating-card">
+          <div>
+            <div class="seating-title">Driver Seat</div>
+            <div class="seating-sub">Adjust recline position and save profile.</div>
+          </div>
+          <div>
+            <div class="seating-recline-row" style="margin-bottom:12px;">
+              <div class="seating-recline-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+              </div>
+              <span class="seating-recline-label">Recline</span>
+              <span class="seating-recline-pct" id="recline-val">50%</span>
+            </div>
+            <div class="seating-slider-wrap" role="slider" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" aria-label="Recline position" id="recline-slider">
+              <div class="seating-slider-fill-left"></div>
+              <div class="seating-slider-fill-right"></div>
+              <div class="seating-slider-thumb" id="recline-thumb"></div>
+            </div>
+          </div>
+          <button class="seating-save-btn" id="save-profile-btn" aria-label="Save to profile" aria-pressed="false">
+            <svg id="save-btn-icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <span id="save-btn-label">Save to Profile</span>
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+  </div><nav class="bottom-nav" aria-label="Main navigation">
+    <button class="nav-tab active" data-screen="nav" aria-current="page">
+      <svg viewBox="0 0 24 24"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></svg>
+      <span class="nav-tab__label">Nav</span>
+    </button>
+    <button class="nav-tab" data-screen="audio">
+      <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      <span class="nav-tab__label">Audio</span>
+    </button>
+    <button class="nav-tab" data-screen="climate">
+      <svg viewBox="0 0 24 24"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+      <span class="nav-tab__label">Climate</span>
+    </button>
+    <button class="nav-tab" data-screen="vehicle">
+      <svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="1"/><circle cx="12" cy="20" r="1"/><circle cx="20" cy="20" r="1"/></svg>
+      <span class="nav-tab__label">Vehicle</span>
+    </button>
+  </nav>
+
+</div><script>
+  /* ── TAB SWITCHING ── */
+  const tabs = document.querySelectorAll('.nav-tab');
+  const screens = document.querySelectorAll('.screen');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.screen;
+      tabs.forEach(t => { t.classList.remove('active'); t.removeAttribute('aria-current'); });
+      screens.forEach(s => s.classList.remove('active'));
+      tab.classList.add('active');
+      tab.setAttribute('aria-current', 'page');
+      document.getElementById('screen-' + target).classList.add('active');
+    });
+  });
+
+  /* ── NAV: Start Route Logic ── */
+  const navForm = document.getElementById('nav-search-form');
+  const navInput = document.getElementById('nav-input');
+  const navDestStreet = document.getElementById('nav-dest-street');
+  
+  navForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const destination = navInput.value.trim();
+    if(destination) {
+      navDestStreet.textContent = `Head to ${destination}`;
+      document.getElementById('nav-idle').style.display = 'none';
+      document.getElementById('nav-active').style.display = 'block';
+      navInput.value = ''; // clear input
+    }
+  });
+
+  document.getElementById('nav-fav-home').addEventListener('click', () => {
+    navDestStreet.textContent = `Head to Home (123 Main St)`;
+    document.getElementById('nav-idle').style.display = 'none';
+    document.getElementById('nav-active').style.display = 'block';
+  });
+
+  document.getElementById('nav-end-btn').addEventListener('click', () => {
+    document.getElementById('nav-active').style.display = 'none';
+    document.getElementById('nav-idle').style.display = 'block';
+  });
+
+  /* ── AUDIO: play/pause & volume ── */
+  const playBtn = document.getElementById('play-btn');
+  const playIcon = document.getElementById('play-icon');
+  let playing = false;
+  playBtn.addEventListener('click', () => {
+    playing = !playing;
+    playBtn.setAttribute('aria-pressed', playing);
+    playIcon.innerHTML = playing
+      ? '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'
+      : '<polygon points="5 3 19 12 5 21 5 3"/>';
+  });
+
+  const volSliderWrap = document.getElementById('vol-slider');
+  const volThumb = document.getElementById('vol-thumb');
+  const volFill = document.getElementById('vol-fill');
+  const volVal = document.getElementById('vol-val');
+  let volDragging = false;
+
+  function setVol(pct) {
+    pct = Math.max(0, Math.min(100, pct));
+    volFill.style.width = pct + '%';
+    volThumb.style.left = pct + '%';
+    volVal.textContent = Math.round(pct) + '%';
+    volSliderWrap.setAttribute('aria-valuenow', Math.round(pct));
+  }
+
+  volSliderWrap.addEventListener('pointerdown', e => {
+    volDragging = true;
+    volSliderWrap.setPointerCapture(e.pointerId);
+    moveVol(e);
+  });
+  volSliderWrap.addEventListener('pointermove', e => { if (volDragging) moveVol(e); });
+  volSliderWrap.addEventListener('pointerup', () => { volDragging = false; });
+
+  function moveVol(e) {
+    const rect = volSliderWrap.getBoundingClientRect();
+    const pct = ((e.clientX - rect.left) / rect.width) * 100;
+    setVol(pct);
+  }
+
+  /* ── CLIMATE: Functions ── */
+  let temp = 72;
+  const tempVal = document.getElementById('temp-val');
+  document.getElementById('temp-minus').addEventListener('click', () => {
+    temp = Math.max(60, temp - 1);
+    tempVal.textContent = temp;
+  });
+  document.getElementById('temp-plus').addEventListener('click', () => {
+    temp = Math.min(90, temp + 1);
+    tempVal.textContent = temp;
+  });
+
+  const climateToggle = document.getElementById('climate-toggle');
+  climateToggle.addEventListener('click', () => {
+    const on = climateToggle.classList.toggle('on');
+    climateToggle.setAttribute('aria-pressed', on);
+  });
+
+  const defrostBtn = document.getElementById('defrost-btn');
+  const defrostRadio = document.getElementById('defrost-radio');
+  let defrostOn = false;
+
+  defrostBtn.addEventListener('click', () => {
+    defrostOn = !defrostOn;
+    if(defrostOn) {
+      defrostBtn.classList.add('active');
+      defrostRadio.classList.add('checked');
+      defrostRadio.setAttribute('aria-checked', 'true');
+    } else {
+      defrostBtn.classList.remove('active');
+      defrostRadio.classList.remove('checked');
+      defrostRadio.setAttribute('aria-checked', 'false');
+    }
+  });
+
+
+  /* ── VEHICLE: segmented control & sliders ── */
+  const segAccess  = document.getElementById('seg-access');
+  const segSeating = document.getElementById('seg-seating');
+  const panelAccess  = document.getElementById('vehicle-access');
+  const panelSeating = document.getElementById('vehicle-seating');
+
+  segAccess.addEventListener('click', () => {
+    segAccess.classList.add('active');   segAccess.setAttribute('aria-selected','true');
+    segSeating.classList.remove('active'); segSeating.setAttribute('aria-selected','false');
+    panelAccess.style.display = '';
+    panelSeating.style.display = 'none';
+  });
+  segSeating.addEventListener('click', () => {
+    segSeating.classList.add('active');  segSeating.setAttribute('aria-selected','true');
+    segAccess.classList.remove('active'); segAccess.setAttribute('aria-selected','false');
+    panelSeating.style.display = '';
+    panelAccess.style.display = 'none';
+  });
+
+  /* Trunk toggle */
+  const trunkBtn       = document.getElementById('trunk-btn');
+  const trunkBtnLabel  = document.getElementById('trunk-btn-label');
+  const trunkBtnIcon   = document.getElementById('trunk-btn-icon');
+  const trunkGraphic   = document.getElementById('trunk-graphic');
+  const trunkClosedSvg = document.getElementById('trunk-closed-svg');
+  const trunkOpenSvg   = document.getElementById('trunk-open-svg');
+  let trunkOpen = false;
+
+  trunkBtn.addEventListener('click', () => {
+    trunkOpen = !trunkOpen;
+    trunkBtn.setAttribute('aria-pressed', trunkOpen);
+
+    if (trunkOpen) {
+      trunkBtn.classList.add('open');
+      trunkGraphic.classList.add('open');
+      trunkClosedSvg.style.display = 'none';
+      trunkOpenSvg.style.display   = 'block';
+      trunkBtnLabel.textContent = 'Close Rear Trunk';
+      trunkBtnIcon.innerHTML = '<polyline points="20 6 9 17 4 12"/>';
+    } else {
+      trunkBtn.classList.remove('open');
+      trunkGraphic.classList.remove('open');
+      trunkClosedSvg.style.display = 'block';
+      trunkOpenSvg.style.display   = 'none';
+      trunkBtnLabel.textContent = 'Open Rear Trunk';
+      trunkBtnIcon.innerHTML = '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>';
+    }
+  });
+
+  /* Recline Slider */
+  const sliderWrap = document.getElementById('recline-slider');
+  const thumb = document.getElementById('recline-thumb');
+  const reclineVal = document.getElementById('recline-val');
+  let dragging = false;
+
+  function setRecline(pct) {
+    pct = Math.max(0, Math.min(100, pct));
+    sliderWrap.querySelector('.seating-slider-fill-left').style.width = pct + '%';
+    sliderWrap.querySelector('.seating-slider-fill-right').style.left = pct + '%';
+    thumb.style.left = pct + '%';
+    reclineVal.textContent = Math.round(pct) + '%';
+    sliderWrap.setAttribute('aria-valuenow', Math.round(pct));
+  }
+
+  sliderWrap.addEventListener('pointerdown', e => {
+    dragging = true;
+    sliderWrap.setPointerCapture(e.pointerId);
+    moveRecline(e);
+  });
+  sliderWrap.addEventListener('pointermove', e => { if (dragging) moveRecline(e); });
+  sliderWrap.addEventListener('pointerup', () => { dragging = false; });
+
+  function moveRecline(e) {
+    const rect = sliderWrap.getBoundingClientRect();
+    const pct = ((e.clientX - rect.left) / rect.width) * 100;
+    setRecline(pct);
+  }
+
+  /* Save profile */
+  const saveBtn      = document.getElementById('save-profile-btn');
+  const saveBtnLabel = document.getElementById('save-btn-label');
+  const saveBtnIcon  = document.getElementById('save-btn-icon');
+  let saveCooldown = false;
+
+  saveBtn.addEventListener('click', () => {
+    if (saveCooldown) return;
+    saveCooldown = true;
+    saveBtn.classList.add('saved');
+    saveBtnLabel.textContent = 'Profile Saved!';
+    saveBtnIcon.innerHTML = '<polyline points="20 6 9 17 4 12"/>';
+    setTimeout(() => {
+      saveBtn.classList.remove('saved');
+      saveBtnLabel.textContent = 'Save to Profile';
+      saveBtnIcon.innerHTML = '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>';
+      saveCooldown = false;
+    }, 2000);
+  });
+</script>
+
+</body>
+</html>
