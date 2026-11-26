@@ -280,8 +280,8 @@
             </div>
           </div>
 
-          <!-- Peak Heat Indicator Pill (Top-Right over Map) -->
-          <div class="absolute top-3 right-3 z-[500] bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm px-3 py-1.5 text-[11px] text-slate-600 hidden sm:flex items-center gap-2">
+          <!-- Peak Heat Indicator Pill (Top-Left next to Zoom Controls so Top-Right Layer Switcher stays clear) -->
+          <div class="absolute top-3 left-14 z-[500] bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm px-3 py-1.5 text-[11px] text-slate-600 hidden sm:flex items-center gap-2 pointer-events-none">
             <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
             <span>Peak Heat Hazard Window: <strong class="text-slate-900">12:00 PM – 4:00 PM</strong></span>
           </div>
@@ -586,16 +586,18 @@
     /**
      * Shenandoah Summer Diurnal Heat Index Curve
      * - Smooth cosine bell peaking at 2:30 PM (14.5h) at ~95°F in valleys (1,000 ft)
-     * - ~68°F at 5:00 AM, ~78°F at 8:00 PM
-     * - Elevation lapse adjustment: -2.5°F per 1,000 ft above 1,000 ft (~86°F on high ridges)
+     * - ~70°F at 5:00 AM, ~79°F at 8:00 PM
+     * - Elevation lapse adjustment: -3.5°F per 1,000 ft above valley floor (1,000 ft)
+     * - Optional +2.0°F valley humidity trap penalty for Descend-First canyon climbs
      */
-    function getHeatIndex(hour, elevFt = 1000) {
+    function getHeatIndex(hour, elevFt = 1000, isValleyTrap = false) {
       const clampedHour = Math.max(4.0, Math.min(22.0, hour));
       const angle = ((clampedHour - 14.5) / 9.5) * Math.PI;
       const diurnalFactor = Math.max(0, 0.5 * (1 + Math.cos(angle)));
-      const valleyHI = 68.0 + 27.0 * diurnalFactor; // 68°F @ 5 AM, 95°F @ 2:30 PM, ~78.2°F @ 8 PM
-      const lapseAdjustment = ((elevFt - 1000.0) / 1000.0) * 2.5;
-      return valleyHI - lapseAdjustment;
+      const valleyHI = 70.0 + 25.0 * diurnalFactor; // 70°F @ 5 AM, 95°F @ 2:30 PM
+      const lapseAdjustment = ((elevFt - 1000.0) / 1000.0) * 3.5;
+      const humidityTrapPenalty = isValleyTrap ? 2.0 : 0.0;
+      return valleyHI - lapseAdjustment + humidityTrapPenalty;
     }
 
     /**
@@ -617,7 +619,7 @@
         climbEnd = startHour + duration * 0.5;
         profileFactor = 1.0;
       } else if (trail.profile === 'Rolling') {
-        climbStart = startHour + duration * 0.15;
+        climbStart = startHour + duration * 0.2;
         climbEnd = startHour + duration * 0.85;
         profileFactor = 1.1;
       } else {
@@ -634,8 +636,9 @@
 
       // 4. Sample diurnal Heat Index curve across the heavy climb window
       // Descend-First climbs start from low canyon/valley floors; others use average elevation
+      const isDescendFirst = trail.profile === 'Descend-First';
       let climbElev;
-      if (trail.profile === 'Descend-First') {
+      if (isDescendFirst) {
         climbElev = Math.max(850, trail.start_elev_ft - trail.gain_ft * 0.75);
       } else {
         climbElev = (trail.start_elev_ft + trail.peak_elev_ft) / 2.0;
@@ -645,7 +648,7 @@
       const samples = 16;
       for (let i = 0; i <= samples; i++) {
         const t = climbStart + ((climbEnd - climbStart) * i) / samples;
-        const hi = getHeatIndex(t, climbElev);
+        const hi = getHeatIndex(t, climbElev, isDescendFirst);
         if (hi > peakClimbHI) peakClimbHI = hi;
       }
 
@@ -699,17 +702,46 @@
     function initMap() {
       state.map = L.map('map', {
         center: [38.52, -78.43],
-        zoom: 9,
+        zoom: 10,
         zoomControl: true,
         scrollWheelZoom: true,
       });
 
-      // CartoDB Positron light cartographic basemap
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 18,
-      }).addTo(state.map);
+      // Free, no-API-key basemap tile layers
+      const esriWorldTopo = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: 'Tiles &copy; Esri &mdash; Esri, USGS, NOAA',
+          maxZoom: 18,
+        }
+      );
+
+      const esriGrayCanvas = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: 'Tiles &copy; Esri',
+          maxZoom: 16,
+        }
+      );
+
+      const openStreetMap = L.tileLayer(
+        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {
+          attribution: '&copy; OpenStreetMap contributors',
+          maxZoom: 19,
+        }
+      );
+
+      // Default to Esri World Topo Map (highlights Shenandoah ridges, valleys, and Skyline Drive)
+      esriWorldTopo.addTo(state.map);
+
+      // Top-right basemap switcher control
+      const baseMaps = {
+        'Esri World Topo': esriWorldTopo,
+        'Clean Light (Esri Gray)': esriGrayCanvas,
+        'OpenStreetMap': openStreetMap,
+      };
+      L.control.layers(baseMaps, null, { position: 'topright' }).addTo(state.map);
 
       state.markersLayer = L.layerGroup().addTo(state.map);
     }
