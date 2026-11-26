@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shenandoah National Park: Dynamic Thermal-Topographical Trail Risk Explorer</title>
+
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            npsForest: '#163828',
+            npsPine: '#1e4b36',
+            tier1: '#2b83ba',
+            tier2: '#fdae61',
+            tier3: '#d7191c',
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+
+  <style>
+    /* Custom range slider for the Start-Time Scrubber */
+    input[type="range"].time-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"].time-slider::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 9999px;
+      background: linear-gradient(
+        to right,
+        #93c5fd 0%,
+        #bae6fd 32%,
+        #fde68a 52%,
+        #fca5a5 63.6%,
+        #ef4444 86%,
+        #dc2626 100%
+      );
+      border: 1px solid #cbd5e1;
+    }
+    input[type="range"].time-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 22px;
+      width: 22px;
+      border-radius: 9999px;
+      background: #163828;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
+      margin-top: -8px;
+      transition: transform 0.15s ease;
+    }
+    input[type="range"].time-slider::-webkit-slider-thumb:hover {
+      transform: scale(1.12);
+    }
+    input[type="range"].time-slider::-moz-range-track {
+      height: 8px;
+      border-radius: 9999px;
+      background: linear-gradient(
+        to right,
+        #93c5fd 0%,
+        #bae6fd 32%,
+        #fde68a 52%,
+        #fca5a5 63.6%,
+        #ef4444 86%,
+        #dc2626 100%
+      );
+      border: 1px solid #cbd5e1;
+    }
+    input[type="range"].time-slider::-moz-range-thumb {
+      height: 22px;
+      width: 22px;
+      border-radius: 9999px;
+      background: #163828;
+      border: 3px solid #ffffff;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35);
+    }
+
+    /* Subtle scrollbar for right sidebar */
+    .sidebar-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .sidebar-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .sidebar-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+
+    /* Clean dark tooltip for Leaflet markers */
+    .leaflet-tooltip.trail-tooltip {
+      background: rgba(15, 23, 42, 0.94);
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 8px 11px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    }
+    .leaflet-tooltip-top.trail-tooltip::before {
+      border-top-color: rgba(15, 23, 42, 0.94);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 font-sans antialiased selection:bg-emerald-100 selection:text-emerald-950">
+
+  <!-- Full-Viewport Application Shell -->
+  <div class="min-h-screen lg:h-screen flex flex-col overflow-x-hidden lg:overflow-hidden">
+
+    <!-- National Park Service / Geospatial Header -->
+    <header class="bg-gradient-to-r from-[#132e21] via-[#183b2b] to-[#1e293b] text-white border-b border-emerald-950/60 px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0 z-20 shadow-md">
+      <div class="flex items-center gap-3 min-w-0">
+        <!-- NPS-inspired Mountain Emblem -->
+        <div class="w-10 h-10 rounded-xl bg-emerald-900/80 border border-emerald-400/30 text-emerald-100 flex items-center justify-center shrink-0 shadow-inner">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 19l5.5-10 4 6.5 3-4.5L21 19H3z" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-sm sm:text-base md:text-lg font-bold tracking-tight text-white truncate">
+              Shenandoah National Park: Dynamic Thermal-Topographical Trail Risk Explorer
+            </h1>
+            <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-400/15 text-emerald-200 border border-emerald-400/25">
+              131 NPS Trails
+            </span>
+          </div>
+          <p class="text-[11px] sm:text-xs text-slate-300 truncate">
+            Start-Time Exertion &amp; Heat Exposure Model &bull; Naismith's Rule &bull; Peak Hazard Window (12:00 PM–4:00 PM)
+          </p>
+        </div>
+      </div>
+
+      <!-- Midday Park Context Pill -->
+      <div class="flex items-center gap-2.5 shrink-0">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 backdrop-blur-sm">
+          <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+          <div class="text-xs leading-tight">
+            <span class="text-slate-300">Midday Peak HI:</span>
+            <strong class="text-white ml-1">95°F Valley / 86°F Ridge</strong>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Split Dashboard -->
+    <main class="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+
+      <!-- LEFT / MAIN PANEL (~67% width on desktop) -->
+      <section class="w-full lg:w-[67%] flex flex-col min-h-0 relative border-b lg:border-b-0 lg:border-r border-slate-200 bg-slate-100">
+
+        <!-- Interactive Start-Time Control Bar -->
+        <div class="bg-white border-b border-slate-200 px-4 sm:px-5 py-3 z-10 shadow-sm">
+          <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+
+            <!-- Left: Play/Pause + Live Start Time + Ambient HI -->
+            <div class="flex items-center justify-between xl:justify-start gap-3">
+              <div class="flex items-center gap-3">
+                <button id="btn-play-pause" type="button" title="Animate risk shift through the day"
+                  class="w-10 h-10 rounded-xl bg-[#163828] hover:bg-[#1e4b36] active:scale-95 text-white flex items-center justify-center shadow-sm transition shrink-0">
+                  <svg id="icon-play" class="w-4 h-4 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                  <svg id="icon-pause" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M6 5h4v14H6zm8 0h4v14h-4z" />
+                  </svg>
+                </button>
+                <div>
+                  <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 leading-none">
+                    Hike Start Time
+                  </div>
+                  <div id="start-time-display" class="text-2xl font-extrabold tracking-tight text-slate-900 leading-tight tabular-nums">
+                    8:30 AM
+                  </div>
+                </div>
+              </div>
+
+              <!-- Current Ambient Heat Index Context -->
+              <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200">
+                <div class="text-right">
+                  <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-400 leading-none">
+                    Ambient HI at Start
+                  </div>
+                  <div class="flex items-baseline justify-end gap-1.5 mt-0.5">
+                    <span id="ambient-hi-value" class="text-sm font-bold text-slate-800 tabular-nums">77°F</span>
+                    <span id="ambient-hi-zone" class="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-800">
+                      Morning
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Middle: Start-Time Scrubber Slider (5:00 AM to 4:00 PM) -->
+            <div class="flex-1 xl:max-w-md px-1">
+              <div class="relative">
+                <input
+                  id="time-slider"
+                  type="range"
+                  min="5"
+                  max="16"
+                  step="0.25"
+                  value="8.5"
+                  aria-label="Hike start time scrubber"
+                  class="time-slider w-full"
+                />
+                <div class="flex justify-between text-[10px] font-medium text-slate-400 mt-1 select-none">
+                  <span>5 AM</span>
+                  <span>8 AM</span>
+                  <span>10 AM</span>
+                  <span class="text-red-600 font-bold">12 PM</span>
+                  <span class="text-red-600 font-bold">2 PM</span>
+                  <span class="text-red-600 font-bold">4 PM</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Quick Presets -->
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button data-preset="6.0" class="preset-btn px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition">
+                6:00 AM (Early)
+              </button>
+              <button data-preset="8.5" class="preset-btn px-2.5 py-1.5 rounded-lg text-xs font-medium border border-[#163828] bg-[#163828] text-white transition">
+                8:30 AM (Typical)
+              </button>
+              <button data-preset="11.0" class="preset-btn px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition">
+                11:00 AM (Late)
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Leaflet Map Container -->
+        <div class="relative flex-1 min-h-[440px] lg:min-h-0 w-full">
+          <div id="map" class="w-full h-full z-0"></div>
+
+          <!-- Map Legend Overlay (Bottom-Left) -->
+          <div class="absolute bottom-4 left-4 z-[500] bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-md p-3 text-xs max-w-[235px]">
+            <div class="font-bold text-slate-800 mb-2 flex items-center justify-between gap-2">
+              <span>Dynamic Thermal Risk</span>
+              <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Live</span>
+            </div>
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#d7191c] border border-slate-900 shrink-0"></span>
+                <span class="text-slate-700 font-medium">Tier 3: High Risk</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#fdae61] border border-slate-900 shrink-0"></span>
+                <span class="text-slate-700 font-medium">Tier 2: Moderate Risk</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full bg-[#2b83ba] border border-slate-900 shrink-0"></span>
+                <span class="text-slate-700 font-medium">Tier 1: Low Risk</span>
+              </div>
+            </div>
+            <div class="mt-2.5 pt-2 border-t border-slate-100 text-[10px] text-slate-500 leading-snug">
+              Circle size scales with cumulative elevation gain (5–11 px). Click any trailhead to inspect its thermal profile.
+            </div>
+          </div>
+
+          <!-- Peak Heat Indicator Pill (Top-Right over Map) -->
+          <div class="absolute top-3 right-3 z-[500] bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl shadow-sm px-3 py-1.5 text-[11px] text-slate-600 hidden sm:flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <span>Peak Heat Hazard Window: <strong class="text-slate-900">12:00 PM – 4:00 PM</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT SIDEBAR (~33% width on desktop, scrollable) -->
+      <aside class="w-full lg:w-[33%] bg-slate-100/80 flex flex-col min-h-0 lg:overflow-y-auto sidebar-scroll p-4 space-y-3.5">
+
+        <!-- 1. Park-Wide Summary Card -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-500">
+              Park-Wide Risk Summary
+            </h2>
+            <span id="summary-trail-count" class="text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+              131 visible
+            </span>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2.5 mb-3">
+            <div class="rounded-xl border border-blue-100 bg-blue-50/70 p-2.5 text-center">
+              <div class="flex items-center justify-center gap-1.5 mb-0.5">
+                <span class="w-2 h-2 rounded-full bg-[#2b83ba]"></span>
+                <span class="text-[11px] font-semibold text-slate-600">Tier 1</span>
+              </div>
+              <div id="count-tier1" class="text-2xl font-extrabold text-[#2b83ba] tabular-nums">0</div>
+              <div id="pct-tier1" class="text-[10px] font-semibold text-slate-500">0% Low</div>
+            </div>
+
+            <div class="rounded-xl border border-amber-100 bg-amber-50/80 p-2.5 text-center">
+              <div class="flex items-center justify-center gap-1.5 mb-0.5">
+                <span class="w-2 h-2 rounded-full bg-[#fdae61]"></span>
+                <span class="text-[11px] font-semibold text-slate-600">Tier 2</span>
+              </div>
+              <div id="count-tier2" class="text-2xl font-extrabold text-amber-600 tabular-nums">0</div>
+              <div id="pct-tier2" class="text-[10px] font-semibold text-slate-500">0% Mod</div>
+            </div>
+
+            <div class="rounded-xl border border-red-100 bg-red-50/80 p-2.5 text-center">
+              <div class="flex items-center justify-center gap-1.5 mb-0.5">
+                <span class="w-2 h-2 rounded-full bg-[#d7191c]"></span>
+                <span class="text-[11px] font-semibold text-slate-600">Tier 3</span>
+              </div>
+              <div id="count-tier3" class="text-2xl font-extrabold text-[#d7191c] tabular-nums">0</div>
+              <div id="pct-tier3" class="text-[10px] font-semibold text-slate-500">0% High</div>
+            </div>
+          </div>
+
+          <!-- Horizontal Stacked Percentage Bar -->
+          <div class="w-full h-3 rounded-full bg-slate-100 overflow-hidden flex shadow-inner">
+            <div id="bar-tier1" class="h-full bg-[#2b83ba] transition-all duration-300" style="width: 34%"></div>
+            <div id="bar-tier2" class="h-full bg-[#fdae61] transition-all duration-300" style="width: 33%"></div>
+            <div id="bar-tier3" class="h-full bg-[#d7191c] transition-all duration-300" style="width: 33%"></div>
+          </div>
+        </div>
+
+        <!-- 2. Filter Controls Card -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <!-- Search by Trail Name -->
+            <div>
+              <label for="trail-search" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Search Trail Name
+              </label>
+              <div class="relative">
+                <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+                </svg>
+                <input
+                  id="trail-search"
+                  type="text"
+                  placeholder="e.g. Whiteoak, Dickey..."
+                  class="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700/30 focus:border-emerald-700 transition"
+                />
+              </div>
+            </div>
+
+            <!-- District Dropdown -->
+            <div>
+              <label for="district-select" class="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                Park District
+              </label>
+              <select
+                id="district-select"
+                class="w-full px-2.5 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700/30 focus:border-emerald-700 transition font-medium text-slate-700"
+              >
+                <option value="All">All Districts</option>
+                <option value="North">North District</option>
+                <option value="Central">Central District</option>
+                <option value="South">South District</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Profile Type Filter Pills -->
+          <div>
+            <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+              Elevation Profile Type
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+              <button data-profile="All" class="profile-pill px-2.5 py-1 rounded-lg text-xs font-medium bg-[#163828] text-white transition">All</button>
+              <button data-profile="Descend-First" class="profile-pill px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Descend-First</button>
+              <button data-profile="Ascend-First" class="profile-pill px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Ascend-First</button>
+              <button data-profile="Rolling" class="profile-pill px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Rolling</button>
+              <button data-profile="Flat" class="profile-pill px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Flat</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Selected Trail Inspector Card -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex-1 flex flex-col">
+          <div class="flex items-start justify-between gap-2 mb-2">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Trail Inspector
+                </span>
+                <span id="detail-id" class="text-[10px] font-mono font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                  NPS_305
+                </span>
+              </div>
+              <h3 id="detail-name" class="text-lg font-extrabold text-slate-900 leading-snug mt-0.5 truncate">
+                Whiteoak Canyon Trail
+              </h3>
+            </div>
+            <span id="detail-tier-badge" class="shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold text-white bg-[#d7191c] shadow-sm">
+              Tier 3: High
+            </span>
+          </div>
+
+          <!-- Metadata Badges -->
+          <div class="flex items-center flex-wrap gap-1.5 mb-3">
+            <span id="detail-district-badge" class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+              Central District
+            </span>
+            <span id="detail-profile-badge" class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+              Descend-First
+            </span>
+            <span id="detail-nps-badge" class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              Very Strenuous (216.9)
+            </span>
+          </div>
+
+          <!-- Key Metrics Grid -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2 mb-3">
+            <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+              <div class="text-[10px] font-semibold uppercase text-slate-400">Distance</div>
+              <div id="detail-dist" class="text-sm font-bold text-slate-800 mt-0.5 tabular-nums">9.95 mi</div>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+              <div class="text-[10px] font-semibold uppercase text-slate-400">Cumul. Gain</div>
+              <div id="detail-gain" class="text-sm font-bold text-slate-800 mt-0.5 tabular-nums">2,363 ft</div>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+              <div class="text-[10px] font-semibold uppercase text-slate-400">Start Elev.</div>
+              <div id="detail-start-elev" class="text-sm font-bold text-slate-800 mt-0.5 tabular-nums">3,482 ft</div>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+              <div class="text-[10px] font-semibold uppercase text-slate-400">Naismith Time</div>
+              <div id="detail-duration" class="text-sm font-bold text-slate-800 mt-0.5 tabular-nums">4h 30m</div>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+              <div class="text-[10px] font-semibold uppercase text-slate-400">Peak Climb HI</div>
+              <div id="detail-peak-hi" class="text-sm font-bold text-red-600 mt-0.5 tabular-nums">92°F</div>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+              <div class="text-[10px] font-semibold uppercase text-slate-400">12–4 PM Overlap</div>
+              <div id="detail-overlap" class="text-sm font-bold text-slate-800 mt-0.5 tabular-nums">1h 00m</div>
+            </div>
+          </div>
+
+          <!-- Heavy Climb Window Readout -->
+          <div class="rounded-xl bg-slate-50 border border-slate-200/80 px-3 py-2 mb-3 flex items-center justify-between text-xs">
+            <span class="text-slate-500 font-medium">Heavy Climb Window</span>
+            <span id="detail-climb-window" class="font-bold text-slate-900 tabular-nums">10:45 AM – 1:00 PM</span>
+          </div>
+
+          <!-- Dynamic Recommendation Banner -->
+          <div id="detail-rec-banner" class="rounded-xl border p-3 mb-3.5 text-xs leading-relaxed bg-red-50 border-red-200 text-red-900">
+            <strong id="detail-rec-title" class="font-bold">High Thermal Risk:</strong>
+            <span id="detail-rec-body">Return climb overlaps peak afternoon heat (12–4 PM).</span>
+          </div>
+
+          <!-- Live-Updating SVG Elevation Cross-Section Chart (Time-of-Day X-Axis) -->
+          <div class="mt-auto">
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                Elevation Profile Over Time of Day
+              </span>
+              <span class="inline-flex items-center gap-1 text-[10px] text-red-600 font-semibold">
+                <span class="w-2.5 h-2.5 rounded-sm bg-red-500/25 border border-red-400"></span>
+                12–4 PM Hazard
+              </span>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-2 overflow-hidden">
+              <svg id="elevation-svg" viewBox="0 0 360 162" class="w-full h-auto block" role="img" aria-label="Dynamic elevation cross-section over time of day"></svg>
+            </div>
+          </div>
+        </div>
+
+      </aside>
+    </main>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <script>
+    /**
+     * =========================================================================
+     * SHENANDOAH NATIONAL PARK: DYNAMIC THERMAL-TOPOGRAPHICAL TRAIL RISK EXPLORER
+     * Hardcoded 131-Trail Authoritative NPS Dataset (trail_features.csv)
+     * =========================================================================
+     */
+
+    const TRAILS = [{"id":"NPS_1","name":"Stony Man Horse Trail","lat":38.60129,"lon":-78.37273,"district":"Central","hike_mi":1.31,"gain_ft":288.6,"start_elev_ft":3989.3,"peak_elev_ft":3989.3,"nps_rating":27.5,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_3","name":"White Rocks Trail","lat":38.6243,"lon":-78.30563,"district":"Central","hike_mi":4.62,"gain_ft":777.8,"start_elev_ft":2231.0,"peak_elev_ft":2232.4,"nps_rating":84.8,"difficulty_nps":"Moderate","profile":"Ascend-First"},{"id":"NPS_14","name":"Dickey Ridge Trail","lat":38.87713,"lon":-78.19729,"district":"North","hike_mi":14.7,"gain_ft":2688.1,"start_elev_ft":718.7,"peak_elev_ft":2371.7,"nps_rating":281.1,"difficulty_nps":"Very Strenuous","profile":"Ascend-First"},{"id":"NPS_16","name":"Rocky Mount Trail","lat":38.28813,"lon":-78.67157,"district":"South","hike_mi":10.5,"gain_ft":3142.9,"start_elev_ft":2727.9,"peak_elev_ft":2727.9,"nps_rating":256.9,"difficulty_nps":"Very Strenuous","profile":"Descend-First"},{"id":"NPS_19","name":"Dickey Ridge Trail","lat":38.87754,"lon":-78.2036,"district":"North","hike_mi":1.34,"gain_ft":94.2,"start_elev_ft":596.8,"peak_elev_ft":691.0,"nps_rating":15.9,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_22","name":"Indian Run Trail","lat":38.79345,"lon":-78.17988,"district":"North","hike_mi":3.19,"gain_ft":1002.9,"start_elev_ft":2157.1,"peak_elev_ft":3111.0,"nps_rating":80.0,"difficulty_nps":"Moderate","profile":"Ascend-First"},{"id":"NPS_24","name":"Jones Mountain Trail","lat":38.48673,"lon":-78.39113,"district":"Central","hike_mi":10.54,"gain_ft":2206.6,"start_elev_ft":3351.6,"peak_elev_ft":3650.1,"nps_rating":215.6,"difficulty_nps":"Very Strenuous","profile":"Descend-First"},{"id":"NPS_26","name":"Broad Hollow Trail","lat":38.60932,"lon":-78.30527,"district":"Central","hike_mi":4.34,"gain_ft":1397.8,"start_elev_ft":2561.7,"peak_elev_ft":2565.8,"nps_rating":110.1,"difficulty_nps":"Moderately Strenuous","profile":"Rolling"},{"id":"NPS_27","name":"Robertson Mtn Trail","lat":38.55866,"lon":-78.33323,"district":"Central","hike_mi":4.73,"gain_ft":2117.8,"start_elev_ft":1562.9,"peak_elev_ft":3233.5,"nps_rating":141.6,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_28","name":"Mill Prong Trail","lat":38.50193,"lon":-78.42642,"district":"Central","hike_mi":2.0,"gain_ft":340.6,"start_elev_ft":3220.5,"peak_elev_ft":3220.5,"nps_rating":36.9,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_34","name":"Corbin Hollow Trail","lat":38.5781,"lon":-78.34675,"district":"Central","hike_mi":4.12,"gain_ft":1215.9,"start_elev_ft":1527.4,"peak_elev_ft":2743.2,"nps_rating":100.1,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_37","name":"Entry Run Trail","lat":38.13851,"lon":-78.78536,"district":"South","hike_mi":4.92,"gain_ft":1530.7,"start_elev_ft":2643.2,"peak_elev_ft":2643.2,"nps_rating":122.7,"difficulty_nps":"Moderately Strenuous","profile":"Descend-First"},{"id":"NPS_38","name":"Knob Mtn Trail","lat":38.14454,"lon":-78.79663,"district":"South","hike_mi":14.15,"gain_ft":2691.1,"start_elev_ft":2567.6,"peak_elev_ft":2814.2,"nps_rating":276.0,"difficulty_nps":"Very Strenuous","profile":"Descend-First"},{"id":"NPS_50","name":"Tuscarora Trail","lat":38.7696,"lon":-78.31747,"district":"North","hike_mi":2.37,"gain_ft":213.1,"start_elev_ft":1029.7,"peak_elev_ft":1122.8,"nps_rating":31.8,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_52","name":"Hawksbill Trail-Upper","lat":38.55185,"lon":-78.3928,"district":"Central","hike_mi":2.12,"gain_ft":418.9,"start_elev_ft":3644.8,"peak_elev_ft":4028.5,"nps_rating":42.2,"difficulty_nps":"Easiest","profile":"Descend-First"},{"id":"NPS_70","name":"Catlett Spur Trail","lat":38.62094,"lon":-78.29939,"district":"Central","hike_mi":2.19,"gain_ft":398.7,"start_elev_ft":2183.6,"peak_elev_ft":2582.4,"nps_rating":41.8,"difficulty_nps":"Easiest","profile":"Ascend-First"},{"id":"NPS_79","name":"Fork Mtn Trail","lat":38.16897,"lon":-78.7756,"district":"South","hike_mi":2.34,"gain_ft":653.7,"start_elev_ft":1621.1,"peak_elev_ft":2274.9,"nps_rating":55.3,"difficulty_nps":"Moderate","profile":"Ascend-First"},{"id":"NPS_84","name":"Passamaquoddy Trail - Skyland Access","lat":38.59463,"lon":-78.38373,"district":"Central","hike_mi":1.0,"gain_ft":164.0,"start_elev_ft":3505.2,"peak_elev_ft":3669.2,"nps_rating":18.1,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_93","name":"Upper Dark Hollow Trail","lat":38.50656,"lon":-78.42629,"district":"Central","hike_mi":4.27,"gain_ft":1210.6,"start_elev_ft":2722.5,"peak_elev_ft":2722.5,"nps_rating":101.6,"difficulty_nps":"Moderately Strenuous","profile":"Descend-First"},{"id":"NPS_100","name":"Hull School Trail","lat":38.70672,"lon":-78.27296,"district":"North","hike_mi":8.64,"gain_ft":2143.3,"start_elev_ft":2450.5,"peak_elev_ft":2450.5,"nps_rating":192.5,"difficulty_nps":"Strenuous","profile":"Ascend-First"},{"id":"NPS_115","name":"Tuscarora-Overall Run Trail","lat":38.76425,"lon":-78.30401,"district":"North","hike_mi":9.14,"gain_ft":2430.1,"start_elev_ft":3381.9,"peak_elev_ft":3381.9,"nps_rating":210.7,"difficulty_nps":"Very Strenuous","profile":"Descend-First"},{"id":"NPS_121","name":"Hazel Mtn Trail","lat":38.6274,"lon":-78.31725,"district":"Central","hike_mi":8.1,"gain_ft":1194.9,"start_elev_ft":2564.6,"peak_elev_ft":2812.9,"nps_rating":139.2,"difficulty_nps":"Moderately Strenuous","profile":"Descend-First"},{"id":"NPS_124","name":"Corbin Mtn Trail","lat":38.57899,"lon":-78.34134,"district":"Central","hike_mi":8.38,"gain_ft":2075.4,"start_elev_ft":2955.8,"peak_elev_ft":3018.1,"nps_rating":186.5,"difficulty_nps":"Strenuous","profile":"Descend-First"},{"id":"NPS_131","name":"Rose River Loop Trail","lat":38.51365,"lon":-78.41754,"district":"Central","hike_mi":4.28,"gain_ft":1153.2,"start_elev_ft":2756.9,"peak_elev_ft":2798.1,"nps_rating":99.3,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_132","name":"Elkwallow Trail","lat":38.75419,"lon":-78.30832,"district":"North","hike_mi":3.71,"gain_ft":375.1,"start_elev_ft":2704.1,"peak_elev_ft":2704.1,"nps_rating":52.7,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_134","name":"Mathews Arm Trail","lat":38.7584,"lon":-78.30491,"district":"North","hike_mi":1.25,"gain_ft":136.4,"start_elev_ft":2472.1,"peak_elev_ft":2472.1,"nps_rating":18.5,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_137","name":"Pocosin Horse Trail","lat":38.41844,"lon":-78.48802,"district":"Central","hike_mi":2.59,"gain_ft":349.1,"start_elev_ft":2718.6,"peak_elev_ft":2722.7,"nps_rating":42.5,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_144","name":"Fork Mtn Horse Trail","lat":38.24274,"lon":-78.69077,"district":"South","hike_mi":2.61,"gain_ft":693.0,"start_elev_ft":2633.2,"peak_elev_ft":3324.8,"nps_rating":60.1,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_146","name":"Trayfoot Mountain Trail","lat":38.21151,"lon":-78.74418,"district":"South","hike_mi":9.45,"gain_ft":2403.1,"start_elev_ft":2948.9,"peak_elev_ft":3358.4,"nps_rating":213.1,"difficulty_nps":"Very Strenuous","profile":"Rolling"},{"id":"NPS_149","name":"North Fork Moormans River Trail","lat":38.19068,"lon":-78.71463,"district":"South","hike_mi":6.47,"gain_ft":649.7,"start_elev_ft":1061.2,"peak_elev_ft":1688.5,"nps_rating":91.7,"difficulty_nps":"Moderate","profile":"Ascend-First"},{"id":"NPS_158","name":"Staunton River Trail","lat":38.48202,"lon":-78.38535,"district":"Central","hike_mi":8.02,"gain_ft":1952.6,"start_elev_ft":2952.9,"peak_elev_ft":2952.9,"nps_rating":177.0,"difficulty_nps":"Strenuous","profile":"Descend-First"},{"id":"NPS_162","name":"Buck Hollow Trail","lat":38.65578,"lon":-78.30682,"district":"Central","hike_mi":6.01,"gain_ft":1718.7,"start_elev_ft":1073.6,"peak_elev_ft":2792.0,"nps_rating":143.7,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_165","name":"RWMA - Doubletop Vig Hiker Trail","lat":38.26337,"lon":-78.65836,"district":"South","hike_mi":5.89,"gain_ft":1186.4,"start_elev_ft":1535.9,"peak_elev_ft":1535.9,"nps_rating":118.2,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_167","name":"Cedar Run Trail","lat":38.54571,"lon":-78.38035,"district":"Central","hike_mi":5.98,"gain_ft":2182.6,"start_elev_ft":1154.0,"peak_elev_ft":3336.6,"nps_rating":161.6,"difficulty_nps":"Strenuous","profile":"Ascend-First"},{"id":"NPS_177","name":"Frazier Discovery Trail","lat":38.29437,"lon":-78.60076,"district":"South","hike_mi":1.01,"gain_ft":331.1,"start_elev_ft":3258.1,"peak_elev_ft":3260.6,"nps_rating":25.9,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_181","name":"Paine Run Trail","lat":38.20158,"lon":-78.7561,"district":"South","hike_mi":7.49,"gain_ft":892.3,"start_elev_ft":2301.0,"peak_elev_ft":2301.0,"nps_rating":115.6,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_184","name":"Bluff Trail","lat":38.77924,"lon":-78.23819,"district":"North","hike_mi":7.65,"gain_ft":819.7,"start_elev_ft":2509.3,"peak_elev_ft":2509.3,"nps_rating":112.0,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_185","name":"Thornton River Upper Trail","lat":38.6537,"lon":-78.32362,"district":"Central","hike_mi":6.46,"gain_ft":1266.3,"start_elev_ft":2562.5,"peak_elev_ft":2562.5,"nps_rating":127.9,"difficulty_nps":"Moderately Strenuous","profile":"Descend-First"},{"id":"NPS_193","name":"Conway River Trail","lat":38.44752,"lon":-78.42806,"district":"Central","hike_mi":3.79,"gain_ft":405.4,"start_elev_ft":1190.7,"peak_elev_ft":1596.1,"nps_rating":55.5,"difficulty_nps":"Moderate","profile":"Ascend-First"},{"id":"NPS_197","name":"Nicholson Hollow Trail","lat":38.58068,"lon":-78.33159,"district":"Central","hike_mi":11.35,"gain_ft":2138.9,"start_elev_ft":922.5,"peak_elev_ft":3060.2,"nps_rating":220.4,"difficulty_nps":"Very Strenuous","profile":"Ascend-First"},{"id":"NPS_210","name":"RWMA - Wilhite Wagon Loop Trail","lat":38.32063,"lon":-78.58719,"district":"South","hike_mi":8.85,"gain_ft":2151.7,"start_elev_ft":1666.2,"peak_elev_ft":2954.0,"nps_rating":195.1,"difficulty_nps":"Strenuous","profile":"Ascend-First"},{"id":"NPS_221","name":"Crescent Rock Trail","lat":38.58177,"lon":-78.389,"district":"Central","hike_mi":2.06,"gain_ft":300.8,"start_elev_ft":3291.0,"peak_elev_ft":3591.8,"nps_rating":35.2,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_226","name":"Doyles River Trail","lat":38.23527,"lon":-78.68192,"district":"South","hike_mi":4.28,"gain_ft":1345.7,"start_elev_ft":2843.5,"peak_elev_ft":2843.5,"nps_rating":107.3,"difficulty_nps":"Moderately Strenuous","profile":"Descend-First"},{"id":"NPS_230","name":"Heiskell Hollow Trail","lat":38.76067,"lon":-78.31546,"district":"North","hike_mi":8.3,"gain_ft":1833.1,"start_elev_ft":2553.3,"peak_elev_ft":2553.3,"nps_rating":174.4,"difficulty_nps":"Strenuous","profile":"Ascend-First"},{"id":"NPS_231","name":"Mill Prong Horse Trail","lat":38.49394,"lon":-78.42799,"district":"Central","hike_mi":3.54,"gain_ft":869.4,"start_elev_ft":3423.9,"peak_elev_ft":3423.9,"nps_rating":78.5,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_233","name":"Catlett Mtn Trail","lat":38.61383,"lon":-78.30264,"district":"Central","hike_mi":2.39,"gain_ft":370.6,"start_elev_ft":2635.0,"peak_elev_ft":2688.4,"nps_rating":42.1,"difficulty_nps":"Easiest","profile":"Descend-First"},{"id":"NPS_234","name":"Rocky Mountain Run Trail","lat":38.28435,"lon":-78.67643,"district":"South","hike_mi":5.23,"gain_ft":988.9,"start_elev_ft":1361.9,"peak_elev_ft":2350.8,"nps_rating":101.7,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_245","name":"Patterson Ridge Trail","lat":38.55262,"lon":-78.29844,"district":"Central","hike_mi":6.21,"gain_ft":1624.7,"start_elev_ft":2896.2,"peak_elev_ft":2932.4,"nps_rating":142.0,"difficulty_nps":"Moderately Strenuous","profile":"Descend-First"},{"id":"NPS_258","name":"Skyland-Big Meadows Horse Trail","lat":38.59334,"lon":-78.38495,"district":"Central","hike_mi":4.75,"gain_ft":1120.6,"start_elev_ft":2617.6,"peak_elev_ft":3644.4,"nps_rating":103.2,"difficulty_nps":"Moderately Strenuous","profile":"Descend-First"},{"id":"NPS_259","name":"Lewis Peak Trail","lat":38.44042,"lon":-78.46246,"district":"Central","hike_mi":4.67,"gain_ft":1537.4,"start_elev_ft":2764.5,"peak_elev_ft":2764.5,"nps_rating":119.9,"difficulty_nps":"Moderately Strenuous","profile":"Descend-First"},{"id":"NPS_261","name":"Riprap Trail","lat":38.1789,"lon":-78.7556,"district":"South","hike_mi":9.11,"gain_ft":1634.5,"start_elev_ft":1502.4,"peak_elev_ft":2954.3,"nps_rating":172.6,"difficulty_nps":"Strenuous","profile":"Ascend-First"},{"id":"NPS_265","name":"Devils Ditch Hunter Access Trail","lat":38.35921,"lon":-78.49314,"district":"Central","hike_mi":2.06,"gain_ft":381.5,"start_elev_ft":1737.0,"peak_elev_ft":1737.0,"nps_rating":39.6,"difficulty_nps":"Easiest","profile":"Ascend-First"},{"id":"NPS_268","name":"Traces Trail","lat":38.76435,"lon":-78.2964,"district":"North","hike_mi":1.62,"gain_ft":167.7,"start_elev_ft":2753.6,"peak_elev_ft":2902.9,"nps_rating":23.3,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_270","name":"Ridge Trail","lat":38.55439,"lon":-78.30273,"district":"Central","hike_mi":1.69,"gain_ft":376.5,"start_elev_ft":939.8,"peak_elev_ft":1316.3,"nps_rating":35.7,"difficulty_nps":"Easiest","profile":"Ascend-First"},{"id":"NPS_273","name":"Hot Mtn-Short Mtn Trail","lat":38.36478,"lon":-78.48751,"district":"Central","hike_mi":4.27,"gain_ft":1295.6,"start_elev_ft":1250.0,"peak_elev_ft":2545.6,"nps_rating":105.2,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_276","name":"Big Run Loop Trail-South","lat":38.26947,"lon":-78.65357,"district":"South","hike_mi":3.81,"gain_ft":1084.8,"start_elev_ft":1755.1,"peak_elev_ft":2839.8,"nps_rating":90.9,"difficulty_nps":"Moderate","profile":"Ascend-First"},{"id":"NPS_287","name":"Weddlewood Trail","lat":38.38866,"lon":-78.50179,"district":"Central","hike_mi":2.59,"gain_ft":490.9,"start_elev_ft":2617.3,"peak_elev_ft":2617.3,"nps_rating":50.5,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_292","name":"Tuscarora Trail","lat":38.76612,"lon":-78.30772,"district":"North","hike_mi":1.33,"gain_ft":266.8,"start_elev_ft":1022.0,"peak_elev_ft":1059.9,"nps_rating":26.6,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_300","name":"Cat Knob Trail","lat":38.40765,"lon":-78.48872,"district":"Central","hike_mi":1.12,"gain_ft":395.0,"start_elev_ft":3683.3,"peak_elev_ft":3683.3,"nps_rating":29.7,"difficulty_nps":"Easiest","profile":"Descend-First"},{"id":"NPS_302","name":"Skyland Stable Trail","lat":38.59419,"lon":-78.37847,"district":"Central","hike_mi":1.25,"gain_ft":213.1,"start_elev_ft":3539.3,"peak_elev_ft":3539.3,"nps_rating":23.0,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_305","name":"Whiteoak Canyon Trail","lat":38.54701,"lon":-78.3512,"district":"Central","hike_mi":9.95,"gain_ft":2362.7,"start_elev_ft":3482.0,"peak_elev_ft":3482.0,"nps_rating":216.9,"difficulty_nps":"Very Strenuous","profile":"Descend-First"},{"id":"NPS_316","name":"Sams Ridge Trail","lat":38.60001,"lon":-78.29601,"district":"Central","hike_mi":4.29,"gain_ft":1411.1,"start_elev_ft":1141.7,"peak_elev_ft":2552.7,"nps_rating":110.0,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_318","name":"Pine Hill Gap Trail","lat":38.417,"lon":-78.47495,"district":"Central","hike_mi":4.56,"gain_ft":1347.1,"start_elev_ft":2542.5,"peak_elev_ft":2542.5,"nps_rating":110.9,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_320","name":"Corbin Cabin Cutoff Trail","lat":38.57296,"lon":-78.34927,"district":"Central","hike_mi":2.78,"gain_ft":964.4,"start_elev_ft":3042.9,"peak_elev_ft":3042.9,"nps_rating":73.2,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_321","name":"Slaughter Trail","lat":38.46524,"lon":-78.40395,"district":"Central","hike_mi":6.33,"gain_ft":1875.5,"start_elev_ft":2871.6,"peak_elev_ft":2996.1,"nps_rating":154.1,"difficulty_nps":"Strenuous","profile":"Descend-First"},{"id":"NPS_328","name":"Dickey Ridge Trail","lat":38.87805,"lon":-78.1979,"district":"North","hike_mi":1.23,"gain_ft":114.2,"start_elev_ft":2492.1,"peak_elev_ft":2553.8,"nps_rating":16.8,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_331","name":"Browntown Trail","lat":38.45938,"lon":-78.46148,"district":"Central","hike_mi":4.5,"gain_ft":1176.2,"start_elev_ft":2654.5,"peak_elev_ft":2654.5,"nps_rating":102.8,"difficulty_nps":"Moderately Strenuous","profile":"Descend-First"},{"id":"NPS_336","name":"Pole Bridge Link Trail","lat":38.72909,"lon":-78.26073,"district":"North","hike_mi":1.69,"gain_ft":136.7,"start_elev_ft":2601.8,"peak_elev_ft":2713.4,"nps_rating":21.5,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_343","name":"South River Falls Trail","lat":38.3835,"lon":-78.51321,"district":"Central","hike_mi":2.94,"gain_ft":767.2,"start_elev_ft":2916.8,"peak_elev_ft":2916.8,"nps_rating":67.2,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_344","name":"Piney Branch Horse Trail","lat":38.72339,"lon":-78.29501,"district":"North","hike_mi":2.41,"gain_ft":211.4,"start_elev_ft":1356.0,"peak_elev_ft":1356.0,"nps_rating":31.9,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_347","name":"Pocosin Hollow Trail","lat":38.41484,"lon":-78.49011,"district":"Central","hike_mi":5.26,"gain_ft":1310.9,"start_elev_ft":2658.4,"peak_elev_ft":2658.4,"nps_rating":117.5,"difficulty_nps":"Moderately Strenuous","profile":"Descend-First"},{"id":"NPS_351","name":"Compton Gap Trail","lat":38.82325,"lon":-78.17114,"district":"North","hike_mi":1.06,"gain_ft":255.5,"start_elev_ft":2043.8,"peak_elev_ft":2299.3,"nps_rating":23.3,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_355","name":"Hawksbill Trail-Lower","lat":38.55568,"lon":-78.3978,"district":"Central","hike_mi":1.45,"gain_ft":600.5,"start_elev_ft":3391.3,"peak_elev_ft":3991.8,"nps_rating":41.7,"difficulty_nps":"Easiest","profile":"Descend-First"},{"id":"NPS_365","name":"Turk Gap Trail","lat":38.12598,"lon":-78.79775,"district":"South","hike_mi":3.41,"gain_ft":857.2,"start_elev_ft":2603.3,"peak_elev_ft":2603.3,"nps_rating":76.5,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_367","name":"Saddle Trail","lat":38.55127,"lon":-78.31074,"district":"Central","hike_mi":3.01,"gain_ft":1081.5,"start_elev_ft":3239.5,"peak_elev_ft":3239.5,"nps_rating":80.6,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_370","name":"Lewis Spring Falls Trail","lat":38.44892,"lon":-78.46325,"district":"Central","hike_mi":3.47,"gain_ft":1098.2,"start_elev_ft":3515.7,"peak_elev_ft":3515.7,"nps_rating":87.3,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_374","name":"Big Run Loop Trail-North","lat":38.26568,"lon":-78.64935,"district":"South","hike_mi":4.45,"gain_ft":1102.4,"start_elev_ft":2824.1,"peak_elev_ft":2824.1,"nps_rating":99.1,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_376","name":"Story of Forest Trail","lat":38.52484,"lon":-78.42552,"district":"Central","hike_mi":1.87,"gain_ft":190.8,"start_elev_ft":3570.0,"peak_elev_ft":3570.0,"nps_rating":26.7,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_377","name":"Saddleback Mtn Trail","lat":38.54937,"lon":-78.30309,"district":"Central","hike_mi":2.97,"gain_ft":298.0,"start_elev_ft":2916.9,"peak_elev_ft":3101.4,"nps_rating":42.1,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_383","name":"Little Devils Stairs Trail","lat":38.74472,"lon":-78.24178,"district":"North","hike_mi":3.96,"gain_ft":1470.2,"start_elev_ft":1207.0,"peak_elev_ft":2677.2,"nps_rating":107.9,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_386","name":"Turk Branch Trail","lat":38.12329,"lon":-78.79301,"district":"South","hike_mi":4.95,"gain_ft":1128.8,"start_elev_ft":2593.5,"peak_elev_ft":2593.5,"nps_rating":105.7,"difficulty_nps":"Moderately Strenuous","profile":"Descend-First"},{"id":"NPS_387","name":"Dickey Ridge Horse Trail","lat":38.87876,"lon":-78.20855,"district":"North","hike_mi":1.28,"gain_ft":390.1,"start_elev_ft":2029.8,"peak_elev_ft":2419.9,"nps_rating":31.6,"difficulty_nps":"Easiest","profile":"Ascend-First"},{"id":"NPS_392","name":"Dark Hollow Falls Trail","lat":38.51166,"lon":-78.42755,"district":"Central","hike_mi":1.69,"gain_ft":524.1,"start_elev_ft":3388.0,"peak_elev_ft":3388.0,"nps_rating":42.1,"difficulty_nps":"Easiest","profile":"Descend-First"},{"id":"NPS_396","name":"Skyland-Big Meadows Horse Trail/Whiteoak Canyon Road","lat":38.54996,"lon":-78.3493,"district":"Central","hike_mi":3.52,"gain_ft":763.6,"start_elev_ft":3383.8,"peak_elev_ft":3383.8,"nps_rating":73.3,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_399","name":"Leading Ridge Trail","lat":38.55281,"lon":-78.29457,"district":"Central","hike_mi":2.27,"gain_ft":1519.5,"start_elev_ft":3365.3,"peak_elev_ft":3413.1,"nps_rating":83.1,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_408","name":"Harris Hollow Trail","lat":38.57855,"lon":-78.38178,"district":"Central","hike_mi":4.49,"gain_ft":1154.3,"start_elev_ft":1259.5,"peak_elev_ft":2413.8,"nps_rating":101.8,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_411","name":"Pass Mountain Trail","lat":38.66207,"lon":-78.31677,"district":"North","hike_mi":5.35,"gain_ft":1218.0,"start_elev_ft":1437.6,"peak_elev_ft":2655.7,"nps_rating":114.1,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_416","name":"Hazel River Trail","lat":38.62098,"lon":-78.32046,"district":"Central","hike_mi":6.42,"gain_ft":1502.3,"start_elev_ft":1091.4,"peak_elev_ft":2567.2,"nps_rating":138.9,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_433","name":"Gap Run Trail","lat":38.60244,"lon":-78.33504,"district":"Central","hike_mi":4.45,"gain_ft":590.4,"start_elev_ft":1240.1,"peak_elev_ft":1830.5,"nps_rating":72.5,"difficulty_nps":"Moderate","profile":"Ascend-First"},{"id":"NPS_443","name":"Thornton River Lower Trail","lat":38.6637,"lon":-78.31802,"district":"Central","hike_mi":2.78,"gain_ft":157.3,"start_elev_ft":1276.2,"peak_elev_ft":1276.2,"nps_rating":29.6,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_446","name":"Crusher Ridge Trail","lat":38.55969,"lon":-78.29528,"district":"Central","hike_mi":4.89,"gain_ft":1558.3,"start_elev_ft":3116.6,"peak_elev_ft":3185.5,"nps_rating":123.4,"difficulty_nps":"Moderately Strenuous","profile":"Descend-First"},{"id":"NPS_450","name":"Springhouse Trail","lat":38.62189,"lon":-78.36431,"district":"Central","hike_mi":1.31,"gain_ft":52.2,"start_elev_ft":2477.0,"peak_elev_ft":2529.2,"nps_rating":11.7,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_464","name":"Tanners Ridge Horse Connector Trail","lat":38.55826,"lon":-78.29806,"district":"Central","hike_mi":1.57,"gain_ft":156.4,"start_elev_ft":3525.0,"peak_elev_ft":3525.0,"nps_rating":22.2,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_474","name":"Jordan River Trail","lat":38.62842,"lon":-78.36914,"district":"Central","hike_mi":2.51,"gain_ft":761.9,"start_elev_ft":1905.3,"peak_elev_ft":1905.3,"nps_rating":61.9,"difficulty_nps":"Moderate","profile":"Ascend-First"},{"id":"NPS_480","name":"Graves Mill Trail","lat":38.64594,"lon":-78.35372,"district":"Central","hike_mi":4.37,"gain_ft":384.0,"start_elev_ft":917.2,"peak_elev_ft":1301.2,"nps_rating":57.9,"difficulty_nps":"Moderate","profile":"Ascend-First"},{"id":"NPS_485","name":"Mt Marshall Trail","lat":38.65761,"lon":-78.35043,"district":"North","hike_mi":11.31,"gain_ft":1695.7,"start_elev_ft":2416.0,"peak_elev_ft":2416.0,"nps_rating":195.8,"difficulty_nps":"Strenuous","profile":"Ascend-First"},{"id":"NPS_493","name":"Snead Farm Loop Trail","lat":38.87347,"lon":-78.19803,"district":"North","hike_mi":1.49,"gain_ft":191.4,"start_elev_ft":2204.7,"peak_elev_ft":2204.7,"nps_rating":23.9,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_494","name":"Big Run Portal Trail","lat":38.26584,"lon":-78.65385,"district":"South","hike_mi":8.92,"gain_ft":535.7,"start_elev_ft":1307.1,"peak_elev_ft":1694.1,"nps_rating":97.8,"difficulty_nps":"Moderate","profile":"Ascend-First"},{"id":"NPS_504","name":"Piney Ridge Trail","lat":38.71619,"lon":-78.28051,"district":"North","hike_mi":6.63,"gain_ft":1403.2,"start_elev_ft":1518.6,"peak_elev_ft":2897.9,"nps_rating":136.4,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_507","name":"Ridge Trail","lat":38.55136,"lon":-78.30228,"district":"Central","hike_mi":5.58,"gain_ft":1873.8,"start_elev_ft":1350.1,"peak_elev_ft":3223.9,"nps_rating":144.5,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_514","name":"Skyland-Big Meadows Horse Trail","lat":38.59833,"lon":-78.37434,"district":"Central","hike_mi":14.02,"gain_ft":2193.3,"start_elev_ft":3526.0,"peak_elev_ft":3642.6,"nps_rating":248.0,"difficulty_nps":"Very Strenuous","profile":"Descend-First"},{"id":"NPS_521","name":"Turk Mtn Trail","lat":38.12801,"lon":-78.80227,"district":"South","hike_mi":1.94,"gain_ft":555.3,"start_elev_ft":2611.2,"peak_elev_ft":2921.3,"nps_rating":46.4,"difficulty_nps":"Easiest","profile":"Descend-First"},{"id":"NPS_523","name":"Rocky Branch Trail","lat":38.68355,"lon":-78.32974,"district":"North","hike_mi":6.19,"gain_ft":1173.6,"start_elev_ft":2475.0,"peak_elev_ft":2700.1,"nps_rating":120.5,"difficulty_nps":"Moderately Strenuous","profile":"Rolling"},{"id":"NPS_526","name":"Big Meadows Main Walkway","lat":38.51758,"lon":-78.43387,"district":"Central","hike_mi":1.65,"gain_ft":85.1,"start_elev_ft":3503.8,"peak_elev_ft":3588.9,"nps_rating":16.8,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_527","name":"Piney Branch Lower Trail","lat":38.71546,"lon":-78.28992,"district":"North","hike_mi":1.26,"gain_ft":131.4,"start_elev_ft":1129.4,"peak_elev_ft":1129.4,"nps_rating":18.2,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_530","name":"Overall/Beecher Connector Trail","lat":38.76233,"lon":-78.30403,"district":"North","hike_mi":1.37,"gain_ft":416.9,"start_elev_ft":778.7,"peak_elev_ft":1195.6,"nps_rating":33.8,"difficulty_nps":"Easiest","profile":"Ascend-First"},{"id":"NPS_539","name":"Passamaquoddy Trail","lat":38.73324,"lon":-78.29708,"district":"North","hike_mi":1.97,"gain_ft":304.7,"start_elev_ft":3411.2,"peak_elev_ft":3464.8,"nps_rating":34.7,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_545","name":"Limberlost Accessible Trail","lat":38.58758,"lon":-78.37513,"district":"Central","hike_mi":1.34,"gain_ft":93.8,"start_elev_ft":3316.2,"peak_elev_ft":3330.7,"nps_rating":15.8,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_550","name":"Powell Mtn Trail","lat":38.75128,"lon":-78.30937,"district":"North","hike_mi":7.2,"gain_ft":2095.1,"start_elev_ft":3232.4,"peak_elev_ft":3232.4,"nps_rating":173.6,"difficulty_nps":"Strenuous","profile":"Descend-First"},{"id":"NPS_552","name":"Hickerson Hollow Trail","lat":38.77812,"lon":-78.30217,"district":"North","hike_mi":2.31,"gain_ft":640.4,"start_elev_ft":1978.7,"peak_elev_ft":1978.7,"nps_rating":54.4,"difficulty_nps":"Moderate","profile":"Ascend-First"},{"id":"NPS_554","name":"Stull Run Trail","lat":38.7654,"lon":-78.28617,"district":"North","hike_mi":4.31,"gain_ft":225.7,"start_elev_ft":1327.0,"peak_elev_ft":1531.9,"nps_rating":44.1,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_561","name":"Laurel Prong Trail","lat":38.49195,"lon":-78.42653,"district":"Central","hike_mi":4.67,"gain_ft":875.5,"start_elev_ft":2648.5,"peak_elev_ft":3524.0,"nps_rating":90.4,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_568","name":"Jeremys Run Upper Trail","lat":38.73744,"lon":-78.3129,"district":"North","hike_mi":10.74,"gain_ft":1150.8,"start_elev_ft":2214.5,"peak_elev_ft":2214.5,"nps_rating":157.2,"difficulty_nps":"Strenuous","profile":"Ascend-First"},{"id":"NPS_574","name":"Beecher Ridge Trail","lat":38.7543,"lon":-78.30434,"district":"North","hike_mi":6.12,"gain_ft":1358.0,"start_elev_ft":1045.9,"peak_elev_ft":2380.2,"nps_rating":128.9,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_575","name":"Overall Run Trail","lat":38.76661,"lon":-78.31273,"district":"North","hike_mi":1.32,"gain_ft":180.5,"start_elev_ft":970.7,"peak_elev_ft":970.7,"nps_rating":21.8,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_580","name":"Fox Hollow Trail","lat":38.86968,"lon":-78.20597,"district":"North","hike_mi":2.18,"gain_ft":370.6,"start_elev_ft":1911.0,"peak_elev_ft":1911.0,"nps_rating":40.2,"difficulty_nps":"Easiest","profile":"Ascend-First"},{"id":"NPS_588","name":"Sugarloaf Trail","lat":38.70559,"lon":-78.30885,"district":"North","hike_mi":2.89,"gain_ft":587.4,"start_elev_ft":3323.6,"peak_elev_ft":3323.6,"nps_rating":58.3,"difficulty_nps":"Moderate","profile":"Descend-First"},{"id":"NPS_607","name":"Hannah Run Trail","lat":38.6172,"lon":-78.30835,"district":"Central","hike_mi":7.11,"gain_ft":1954.9,"start_elev_ft":1295.1,"peak_elev_ft":3249.9,"nps_rating":166.7,"difficulty_nps":"Strenuous","profile":"Ascend-First"},{"id":"NPS_611","name":"Wildcat Ridge Trail","lat":38.55461,"lon":-78.29658,"district":"Central","hike_mi":5.34,"gain_ft":1314.9,"start_elev_ft":1633.4,"peak_elev_ft":2948.3,"nps_rating":118.5,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_612","name":"Jones Run Trail","lat":38.22121,"lon":-78.69269,"district":"South","hike_mi":4.85,"gain_ft":1262.5,"start_elev_ft":1496.3,"peak_elev_ft":2758.9,"nps_rating":110.7,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_614","name":"Stony Mountain Trail","lat":38.84824,"lon":-78.18141,"district":"North","hike_mi":2.19,"gain_ft":481.1,"start_elev_ft":2570.0,"peak_elev_ft":3033.2,"nps_rating":45.9,"difficulty_nps":"Easiest","profile":"Descend-First"},{"id":"NPS_623","name":"Salamander Trail","lat":38.55479,"lon":-78.39163,"district":"Central","hike_mi":1.36,"gain_ft":297.7,"start_elev_ft":3640.4,"peak_elev_ft":3938.1,"nps_rating":28.5,"difficulty_nps":"Easiest","profile":"Flat"},{"id":"NPS_625","name":"Knob Mtn Cutoff Trail","lat":38.85867,"lon":-78.16756,"district":"North","hike_mi":1.16,"gain_ft":362.0,"start_elev_ft":1886.1,"peak_elev_ft":2248.1,"nps_rating":29.0,"difficulty_nps":"Easiest","profile":"Ascend-First"},{"id":"NPS_630","name":"Rockytop Trail","lat":38.25124,"lon":-78.68605,"district":"South","hike_mi":10.99,"gain_ft":2021.7,"start_elev_ft":2689.9,"peak_elev_ft":2798.6,"nps_rating":210.8,"difficulty_nps":"Very Strenuous","profile":"Descend-First"},{"id":"NPS_636","name":"Neighbor Mtn Trail","lat":38.86477,"lon":-78.19544,"district":"North","hike_mi":10.16,"gain_ft":2258.4,"start_elev_ft":2823.2,"peak_elev_ft":2823.2,"nps_rating":214.2,"difficulty_nps":"Very Strenuous","profile":"Descend-First"},{"id":"NPS_641","name":"Austin Mountain Trail","lat":38.87359,"lon":-78.18613,"district":"North","hike_mi":6.16,"gain_ft":1577.8,"start_elev_ft":2729.7,"peak_elev_ft":2729.7,"nps_rating":139.4,"difficulty_nps":"Moderately Strenuous","profile":"Descend-First"},{"id":"NPS_648","name":"Big Devils Stairs Trail","lat":38.77145,"lon":-78.21803,"district":"North","hike_mi":2.79,"gain_ft":1070.1,"start_elev_ft":2399.6,"peak_elev_ft":2399.6,"nps_rating":77.2,"difficulty_nps":"Moderate","profile":"Ascend-First"},{"id":"NPS_650","name":"Loft Mountain Campground Trail 1","lat":38.25684,"lon":-78.65705,"district":"South","hike_mi":2.59,"gain_ft":425.8,"start_elev_ft":3299.8,"peak_elev_ft":3299.8,"nps_rating":46.9,"difficulty_nps":"Easiest","profile":"Descend-First"},{"id":"NPS_660","name":"Furnace Mountain Trail","lat":38.89206,"lon":-78.20827,"district":"North","hike_mi":6.42,"gain_ft":1994.8,"start_elev_ft":3194.8,"peak_elev_ft":3194.8,"nps_rating":160.0,"difficulty_nps":"Strenuous","profile":"Descend-First"},{"id":"NPS_665","name":"Buck Ridge Trail","lat":38.5498,"lon":-78.29887,"district":"Central","hike_mi":5.3,"gain_ft":1506.6,"start_elev_ft":1122.7,"peak_elev_ft":2629.3,"nps_rating":126.3,"difficulty_nps":"Moderately Strenuous","profile":"Ascend-First"},{"id":"NPS_666","name":"Jenkins Gap Trail","lat":38.80575,"lon":-78.1761,"district":"North","hike_mi":3.2,"gain_ft":921.4,"start_elev_ft":1397.4,"peak_elev_ft":2318.7,"nps_rating":76.7,"difficulty_nps":"Moderate","profile":"Ascend-First"}];
+
+    // Cartographic Risk Tier Palette
+    const TIER_CONFIG = {
+      1: {
+        label: 'Tier 1: Low',
+        fullLabel: 'Tier 1: Low Risk',
+        color: '#2b83ba',
+        badgeBg: 'bg-[#2b83ba]',
+      },
+      2: {
+        label: 'Tier 2: Moderate',
+        fullLabel: 'Tier 2: Moderate Risk',
+        color: '#fdae61',
+        badgeBg: 'bg-amber-500',
+      },
+      3: {
+        label: 'Tier 3: High',
+        fullLabel: 'Tier 3: High Risk',
+        color: '#d7191c',
+        badgeBg: 'bg-[#d7191c]',
+      }
+    };
+
+    // Application State
+    const state = {
+      startHour: 8.5,           // Defaults to 8:30 AM
+      selectedTrailId: 'NPS_305', // Defaults to Whiteoak Canyon Trail
+      searchQuery: '',
+      filterProfile: 'All',
+      filterDistrict: 'All',
+      isPlaying: false,
+      playTimer: null,
+      map: null,
+      markersLayer: null,
+      highlightRing: null,
+    };
+
+    // =========================================================================
+    // 1. THERMAL-TOPOGRAPHICAL DYNAMIC RISK MODEL
+    // =========================================================================
+
+    /**
+     * Format decimal hour (e.g. 8.5 -> "8:30 AM", 14.25 -> "2:15 PM")
+     */
+    function formatHour(decimalHour) {
+      const normalized = ((decimalHour % 24) + 24) % 24;
+      let hours = Math.floor(normalized);
+      let mins = Math.round((normalized - hours) * 60);
+      if (mins === 60) {
+        hours = (hours + 1) % 24;
+        mins = 0;
+      }
+      const period = hours >= 12 ? 'PM' : 'AM';
+      const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+      return `${displayHour}:${mins.toString().padStart(2, '0')} ${period}`;
+    }
+
+    /**
+     * Compact time label for SVG axis ticks (e.g. "8:30a", "12p", "2:15p")
+     */
+    function formatShortHour(decimalHour) {
+      const normalized = ((decimalHour % 24) + 24) % 24;
+      let hours = Math.floor(normalized);
+      let mins = Math.round((normalized - hours) * 60);
+      if (mins === 60) {
+        hours = (hours + 1) % 24;
+        mins = 0;
+      }
+      const suffix = hours >= 12 ? 'p' : 'a';
+      const displayHour = hours % 12 === 0 ? 12 : hours % 12;
+      return mins === 0 ? `${displayHour}${suffix}` : `${displayHour}:${mins.toString().padStart(2, '0')}${suffix}`;
+    }
+
+    /**
+     * Format decimal hours as "Xh Ym"
+     */
+    function formatDuration(hoursFloat) {
+      const totalMins = Math.round(Math.max(0, hoursFloat) * 60);
+      const h = Math.floor(totalMins / 60);
+      const m = totalMins % 60;
+      if (h === 0) return `${m}m`;
+      return `${h}h ${m.toString().padStart(2, '0')}m`;
+    }
+
+    /**
+     * Shenandoah Summer Diurnal Heat Index Curve
+     * - Smooth cosine bell peaking at 2:30 PM (14.5h) at ~95°F in valleys (1,000 ft)
+     * - ~68°F at 5:00 AM, ~78°F at 8:00 PM
+     * - Elevation lapse adjustment: -2.5°F per 1,000 ft above 1,000 ft (~86°F on high ridges)
+     */
+    function getHeatIndex(hour, elevFt = 1000) {
+      const clampedHour = Math.max(4.0, Math.min(22.0, hour));
+      const angle = ((clampedHour - 14.5) / 9.5) * Math.PI;
+      const diurnalFactor = Math.max(0, 0.5 * (1 + Math.cos(angle)));
+      const valleyHI = 68.0 + 27.0 * diurnalFactor; // 68°F @ 5 AM, 95°F @ 2:30 PM, ~78.2°F @ 8 PM
+      const lapseAdjustment = ((elevFt - 1000.0) / 1000.0) * 2.5;
+      return valleyHI - lapseAdjustment;
+    }
+
+    /**
+     * Evaluate a trail's dynamic thermal risk tier at a given startHour
+     */
+    function evaluateTrail(trail, startHour) {
+      // 1. Naismith's Rule Duration (hours)
+      const duration = (trail.hike_mi / 3.0) + (trail.gain_ft / 2000.0);
+      const finishHour = startHour + duration;
+
+      // 2. Heavy Exertion / Climb Window by Profile
+      let climbStart, climbEnd, profileFactor;
+      if (trail.profile === 'Descend-First') {
+        climbStart = startHour + duration * 0.5;
+        climbEnd = finishHour;
+        profileFactor = 1.25;
+      } else if (trail.profile === 'Ascend-First') {
+        climbStart = startHour;
+        climbEnd = startHour + duration * 0.5;
+        profileFactor = 1.0;
+      } else if (trail.profile === 'Rolling') {
+        climbStart = startHour + duration * 0.15;
+        climbEnd = startHour + duration * 0.85;
+        profileFactor = 1.1;
+      } else {
+        // Flat
+        climbStart = startHour;
+        climbEnd = finishHour;
+        profileFactor = 0.65;
+      }
+
+      // 3. Overlap hours with Peak Thermal Hazard Window [12:00 PM, 4:00 PM]
+      const overlapStart = Math.max(climbStart, 12.0);
+      const overlapEnd = Math.min(climbEnd, 16.0);
+      const overlapHrs = Math.max(0, overlapEnd - overlapStart);
+
+      // 4. Sample diurnal Heat Index curve across the heavy climb window
+      // Descend-First climbs start from low canyon/valley floors; others use average elevation
+      let climbElev;
+      if (trail.profile === 'Descend-First') {
+        climbElev = Math.max(850, trail.start_elev_ft - trail.gain_ft * 0.75);
+      } else {
+        climbElev = (trail.start_elev_ft + trail.peak_elev_ft) / 2.0;
+      }
+
+      let peakClimbHI = -Infinity;
+      const samples = 16;
+      for (let i = 0; i <= samples; i++) {
+        const t = climbStart + ((climbEnd - climbStart) * i) / samples;
+        const hi = getHeatIndex(t, climbElev);
+        if (hi > peakClimbHI) peakClimbHI = hi;
+      }
+
+      // 5. Composite Dynamic Thermal Exertion Score
+      const exertionScore = peakClimbHI * (1 + trail.gain_ft / 1000.0) * (0.5 + overlapHrs) * profileFactor;
+
+      // 6. Dynamic Tier Classification
+      const isTier3 =
+        (trail.profile === 'Descend-First' && trail.gain_ft >= 1200 && overlapHrs >= 0.75 && peakClimbHI >= 86) ||
+        (trail.gain_ft >= 1500 && overlapHrs >= 1.25 && peakClimbHI >= 88) ||
+        (peakClimbHI >= 91 && trail.gain_ft >= 800 && overlapHrs >= 0.75);
+
+      const isTier2 =
+        (trail.gain_ft >= 800 && overlapHrs >= 0.5 && peakClimbHI >= 82) ||
+        (trail.gain_ft >= 1500 && peakClimbHI >= 78) ||
+        (overlapHrs >= 1.0 && peakClimbHI >= 84);
+
+      let tier = 1;
+      if (isTier3) tier = 3;
+      else if (isTier2) tier = 2;
+
+      return {
+        duration,
+        finishHour,
+        climbStart,
+        climbEnd,
+        overlapHrs,
+        peakClimbHI: Math.round(peakClimbHI),
+        exertionScore: Math.round(exertionScore),
+        tier,
+      };
+    }
+
+    /**
+     * Determine latest morning start time that avoids Tier 3 risk for a given trail
+     */
+    function findRecommendedStart(trail) {
+      let latestNonTier3 = null;
+      for (let h = 5.0; h <= 11.5; h += 0.25) {
+        if (evaluateTrail(trail, h).tier < 3) {
+          latestNonTier3 = h;
+        }
+      }
+      return latestNonTier3;
+    }
+
+    // =========================================================================
+    // 2. LEAFLET MAP INITIALIZATION & MARKER RENDERING
+    // =========================================================================
+
+    function initMap() {
+      state.map = L.map('map', {
+        center: [38.52, -78.43],
+        zoom: 9,
+        zoomControl: true,
+        scrollWheelZoom: true,
+      });
+
+      // CartoDB Positron light cartographic basemap
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 18,
+      }).addTo(state.map);
+
+      state.markersLayer = L.layerGroup().addTo(state.map);
+    }
+
+    function getFilteredTrails() {
+      const q = state.searchQuery.trim().toLowerCase();
+      return TRAILS.filter(t => {
+        const matchSearch = !q || t.name.toLowerCase().includes(q) || t.id.toLowerCase().includes(q);
+        const matchProfile = state.filterProfile === 'All' || t.profile === state.filterProfile;
+        const matchDistrict = state.filterDistrict === 'All' || t.district === state.filterDistrict;
+        return matchSearch && matchProfile && matchDistrict;
+      });
+    }
+
+    function renderMapMarkers() {
+      state.markersLayer.clearLayers();
+      if (state.highlightRing) {
+        state.map.removeLayer(state.highlightRing);
+        state.highlightRing = null;
+      }
+
+      const filtered = getFilteredTrails();
+
+      // Sort so Tier 3 markers render on top of Tier 2 and Tier 1
+      const evaluated = filtered.map(trail => ({
+        trail,
+        evalRes: evaluateTrail(trail, state.startHour),
+      })).sort((a, b) => a.evalRes.tier - b.evalRes.tier);
+
+      evaluated.forEach(({ trail, evalRes }) => {
+        const tierInfo = TIER_CONFIG[evalRes.tier];
+        const isSelected = trail.id === state.selectedTrailId;
+
+        // Subtle radius scaling with cumulative elevation gain (5px to 11px)
+        const radius = 5 + Math.min(6, (trail.gain_ft / 3000) * 6);
+
+        if (isSelected) {
+          state.highlightRing = L.circleMarker([trail.lat, trail.lon], {
+            radius: radius + 5.5,
+            color: '#0f172a',
+            weight: 2.5,
+            dashArray: '4, 3',
+            fillColor: tierInfo.color,
+            fillOpacity: 0.22,
+            interactive: false,
+          }).addTo(state.map);
+        }
+
+        const marker = L.circleMarker([trail.lat, trail.lon], {
+          radius: isSelected ? radius + 1.5 : radius,
+          color: '#1e293b',
+          weight: isSelected ? 2.5 : 1.25,
+          fillColor: tierInfo.color,
+          fillOpacity: 0.9,
+        });
+
+        const tooltipTierColor =
+          evalRes.tier === 3 ? '#fca5a5' : evalRes.tier === 2 ? '#fcd34d' : '#7dd3fc';
+
+        marker.bindTooltip(
+          `<div class="font-bold text-white leading-tight">${escapeHtml(trail.name)}</div>
+           <div class="text-[11px] text-slate-300 mt-0.5">${trail.hike_mi.toFixed(1)} mi &bull; ${Math.round(trail.gain_ft).toLocaleString()} ft gain &bull; ${escapeHtml(trail.profile)}</div>
+           <div class="mt-1 flex items-center gap-1.5 text-[11px] font-semibold" style="color:${tooltipTierColor}">
+             <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${tierInfo.color};"></span>
+             ${tierInfo.fullLabel} (${evalRes.peakClimbHI}°F Climb HI)
+           </div>`,
+          {
+            direction: 'top',
+            offset: [0, -8],
+            className: 'trail-tooltip',
+          }
+        );
+
+        marker.on('click', () => {
+          state.selectedTrailId = trail.id;
+          updateUI();
+        });
+
+        marker.addTo(state.markersLayer);
+      });
+    }
+
+    // =========================================================================
+    // 3. LIVE-UPDATING SVG ELEVATION CROSS-SECTION CHART (OVER TIME OF DAY)
+    // =========================================================================
+
+    function renderElevationChart(trail, evalRes) {
+      const svg = document.getElementById('elevation-svg');
+      const W = 360;
+      const H = 162;
+      const padL = 44;
+      const padR = 14;
+      const padT = 20;
+      const padB = 28;
+      const plotW = W - padL - padR;
+      const plotH = H - padT - padB;
+
+      const startT = state.startHour;
+      const endT = evalRes.finishHour;
+      const duration = Math.max(0.25, evalRes.duration);
+
+      // Generate schematic elevation points over [0..1] hike progress (mapped to Start Time -> Finish Time)
+      const numPts = 64;
+      const pts = [];
+      const startE = trail.start_elev_ft;
+      const gain = trail.gain_ft;
+      let minE = Infinity;
+      let maxE = -Infinity;
+
+      for (let i = 0; i <= numPts; i++) {
+        const u = i / numPts;
+        let elev = startE;
+
+        if (trail.profile === 'Descend-First') {
+          // Inverted V: descend first 50% into valley, climb second 50% back up
+          const drop = Math.min(startE - 650, gain * 0.9);
+          if (u <= 0.5) {
+            const p = u / 0.5;
+            elev = startE - drop * (0.5 - 0.5 * Math.cos(p * Math.PI));
+          } else {
+            const p = (u - 0.5) / 0.5;
+            elev = (startE - drop) + drop * (0.5 - 0.5 * Math.cos(p * Math.PI));
+          }
+          elev += Math.sin(u * Math.PI * 8) * Math.min(38, gain * 0.025);
+        } else if (trail.profile === 'Ascend-First') {
+          // Mountain A: climb first 50% to peak, descend second 50%
+          const rise = Math.max(gain * 0.85, trail.peak_elev_ft - startE);
+          if (u <= 0.5) {
+            const p = u / 0.5;
+            elev = startE + rise * (0.5 - 0.5 * Math.cos(p * Math.PI));
+          } else {
+            const p = (u - 0.5) / 0.5;
+            elev = (startE + rise) - rise * (0.5 - 0.5 * Math.cos(p * Math.PI));
+          }
+          elev += Math.sin(u * Math.PI * 7) * Math.min(35, gain * 0.025);
+        } else if (trail.profile === 'Rolling') {
+          // Continuous wave across ridgeline
+          const amp = Math.max(150, gain * 0.3);
+          elev = startE + amp * Math.sin(u * Math.PI * 3.5) + (amp * 0.35) * Math.sin(u * Math.PI * 7);
+        } else {
+          // Flat / gentle contour
+          elev = startE + Math.min(180, gain * 0.45) * Math.sin(u * Math.PI) + Math.sin(u * Math.PI * 4) * 14;
+        }
+
+        if (elev < minE) minE = elev;
+        if (elev > maxE) maxE = elev;
+        pts.push({ t: startT + u * duration, elev });
+      }
+
+      const rangeE = Math.max(250, maxE - minE);
+      const yMin = Math.floor((minE - rangeE * 0.15) / 100) * 100;
+      const yMax = Math.ceil((maxE + rangeE * 0.15) / 100) * 100;
+
+      const xScale = t => padL + ((t - startT) / duration) * plotW;
+      const yScale = e => padT + plotH - ((e - yMin) / (yMax - yMin)) * plotH;
+
+      const lineCoords = pts.map(p => `${xScale(p.t).toFixed(1)},${yScale(p.elev).toFixed(1)}`).join(' ');
+      const areaPath =
+        `M ${xScale(startT).toFixed(1)},${(padT + plotH).toFixed(1)} ` +
+        pts.map(p => `L ${xScale(p.t).toFixed(1)},${yScale(p.elev).toFixed(1)}`).join(' ') +
+        ` L ${xScale(endT).toFixed(1)},${(padT + plotH).toFixed(1)} Z`;
+
+      const tierColor = TIER_CONFIG[evalRes.tier].color;
+
+      // Horizontal elevation gridlines
+      const yMid = Math.round((yMin + yMax) / 2);
+      const gridHtml = [yMin, yMid, yMax].map(val => {
+        const y = yScale(val);
+        return `
+          <line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-dasharray="3,3" stroke-width="1" />
+          <text x="${padL - 5}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="#64748b" font-family="Inter, sans-serif">${val.toLocaleString()}ft</text>
+        `;
+      }).join('');
+
+      // Time-of-day X-axis ticks (Start, Quarter, Mid, Three-Quarter, Finish)
+      const tickFracs = [0, 0.333, 0.667, 1];
+      const xTicksHtml = tickFracs.map((f, idx) => {
+        const t = startT + f * duration;
+        const x = xScale(t);
+        const anchor = idx === 0 ? 'start' : idx === tickFracs.length - 1 ? 'end' : 'middle';
+        return `
+          <line x1="${x.toFixed(1)}" y1="${padT + plotH}" x2="${x.toFixed(1)}" y2="${padT + plotH + 4}" stroke="#94a3b8" stroke-width="1" />
+          <text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="${anchor}" font-size="9" font-weight="${idx === 0 || idx === 3 ? '600' : '400'}" fill="#475569" font-family="Inter, sans-serif">${formatShortHour(t)}</text>
+        `;
+      }).join('');
+
+      // Translucent Red Vertical Hazard Band for 12:00 PM - 4:00 PM Peak Heat Window
+      const bandStartT = Math.max(startT, 12.0);
+      const bandEndT = Math.min(endT, 16.0);
+      let hazardBandHtml = '';
+      if (bandEndT > bandStartT) {
+        const bx1 = xScale(bandStartT);
+        const bx2 = xScale(bandEndT);
+        const bw = Math.max(2, bx2 - bx1);
+        hazardBandHtml = `
+          <rect x="${bx1.toFixed(1)}" y="${padT}" width="${bw.toFixed(1)}" height="${plotH}" fill="#ef4444" fill-opacity="0.22" />
+          <line x1="${bx1.toFixed(1)}" y1="${padT}" x2="${bx1.toFixed(1)}" y2="${padT + plotH}" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2" />
+          <line x1="${(bx1 + bw).toFixed(1)}" y1="${padT}" x2="${(bx1 + bw).toFixed(1)}" y2="${padT + plotH}" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3,2" />
+          ${bw > 48 ? `<text x="${(bx1 + bw / 2).toFixed(1)}" y="${padT + 12}" text-anchor="middle" font-size="8.5" font-weight="700" fill="#b91c1c" font-family="Inter, sans-serif">12–4 PM HEAT</text>` : ''}
+        `;
+      }
+
+      // Heavy Climb Phase Bracket along top of chart
+      const cx1 = xScale(evalRes.climbStart);
+      const cx2 = xScale(evalRes.climbEnd);
+      const climbBracketHtml = trail.profile !== 'Flat' ? `
+        <line x1="${cx1.toFixed(1)}" y1="${padT - 6}" x2="${cx2.toFixed(1)}" y2="${padT - 6}" stroke="#0f172a" stroke-width="2.5" stroke-linecap="round" />
+        <text x="${((cx1 + cx2) / 2).toFixed(1)}" y="${padT - 10}" text-anchor="middle" font-size="8" font-weight="700" fill="#1e293b" font-family="Inter, sans-serif">Heavy Climb</text>
+      ` : '';
+
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="elevAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${tierColor}" stop-opacity="0.34" />
+            <stop offset="100%" stop-color="${tierColor}" stop-opacity="0.04" />
+          </linearGradient>
+        </defs>
+        ${gridHtml}
+        ${hazardBandHtml}
+        <path d="${areaPath}" fill="url(#elevAreaGrad)" />
+        <polyline points="${lineCoords}" fill="none" stroke="${tierColor}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+        ${climbBracketHtml}
+        <line x1="${padL}" y1="${padT + plotH}" x2="${W - padR}" y2="${padT + plotH}" stroke="#cbd5e1" stroke-width="1" />
+        ${xTicksHtml}
+      `;
+    }
+
+    // =========================================================================
+    // 4. UI UPDATES (HEADER, SUMMARY, INSPECTOR)
+    // =========================================================================
+
+    function updateTimeHeader() {
+      document.getElementById('start-time-display').textContent = formatHour(state.startHour);
+      document.getElementById('time-slider').value = state.startHour;
+
+      // Park-wide representative ambient HI at start time (~2,000 ft mid-elevation)
+      const ambientHI = Math.round(getHeatIndex(state.startHour, 2000));
+      document.getElementById('ambient-hi-value').textContent = `${ambientHI}°F`;
+
+      const zoneEl = document.getElementById('ambient-hi-zone');
+      if (state.startHour >= 12.0 && state.startHour <= 16.0) {
+        zoneEl.textContent = 'Peak Hazard';
+        zoneEl.className = 'text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-red-100 text-red-700';
+      } else if (state.startHour >= 9.5 && state.startHour < 12.0) {
+        zoneEl.textContent = 'Warming';
+        zoneEl.className = 'text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-800';
+      } else {
+        zoneEl.textContent = 'Cool Morning';
+        zoneEl.className = 'text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-800';
+      }
+
+      // Highlight matching quick-preset button
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        const val = parseFloat(btn.dataset.preset);
+        if (Math.abs(val - state.startHour) < 0.01) {
+          btn.className = 'preset-btn px-2.5 py-1.5 rounded-lg text-xs font-medium border border-[#163828] bg-[#163828] text-white transition';
+        } else {
+          btn.className = 'preset-btn px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition';
+        }
+      });
+    }
+
+    function updateSummaryCard() {
+      const filtered = getFilteredTrails();
+      let c1 = 0, c2 = 0, c3 = 0;
+
+      filtered.forEach(t => {
+        const res = evaluateTrail(t, state.startHour);
+        if (res.tier === 1) c1++;
+        else if (res.tier === 2) c2++;
+        else c3++;
+      });
+
+      const total = filtered.length;
+      document.getElementById('summary-trail-count').textContent = `${total} of ${TRAILS.length} visible`;
+      document.getElementById('count-tier1').textContent = c1;
+      document.getElementById('count-tier2').textContent = c2;
+      document.getElementById('count-tier3').textContent = c3;
+
+      const p1 = total ? Math.round((c1 / total) * 100) : 0;
+      const p2 = total ? Math.round((c2 / total) * 100) : 0;
+      const p3 = total ? Math.max(0, 100 - p1 - p2) : 0;
+
+      document.getElementById('pct-tier1').textContent = `${p1}% Low`;
+      document.getElementById('pct-tier2').textContent = `${p2}% Mod`;
+      document.getElementById('pct-tier3').textContent = `${p3}% High`;
+
+      document.getElementById('bar-tier1').style.width = `${p1}%`;
+      document.getElementById('bar-tier2').style.width = `${p2}%`;
+      document.getElementById('bar-tier3').style.width = `${p3}%`;
+    }
+
+    function updateInspector() {
+      let trail = TRAILS.find(t => t.id === state.selectedTrailId) || TRAILS[0];
+      const evalRes = evaluateTrail(trail, state.startHour);
+      const tierInfo = TIER_CONFIG[evalRes.tier];
+
+      document.getElementById('detail-id').textContent = trail.id;
+      document.getElementById('detail-name').textContent = trail.name;
+
+      const tierBadge = document.getElementById('detail-tier-badge');
+      tierBadge.textContent = tierInfo.label;
+      tierBadge.className = `shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold text-white shadow-sm ${tierInfo.badgeBg}`;
+
+      document.getElementById('detail-district-badge').textContent = `${trail.district} District`;
+      document.getElementById('detail-nps-badge').textContent = `${trail.difficulty_nps} (${trail.nps_rating})`;
+
+      const profileBadge = document.getElementById('detail-profile-badge');
+      profileBadge.textContent = trail.profile;
+      if (trail.profile === 'Descend-First') {
+        profileBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200';
+      } else if (trail.profile === 'Ascend-First') {
+        profileBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200';
+      } else if (trail.profile === 'Rolling') {
+        profileBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200';
+      } else {
+        profileBadge.className = 'inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200';
+      }
+
+      document.getElementById('detail-dist').textContent = `${trail.hike_mi.toFixed(2)} mi`;
+      document.getElementById('detail-gain').textContent = `${Math.round(trail.gain_ft).toLocaleString()} ft`;
+      document.getElementById('detail-start-elev').textContent = `${Math.round(trail.start_elev_ft).toLocaleString()} ft`;
+      document.getElementById('detail-duration').textContent = formatDuration(evalRes.duration);
+      document.getElementById('detail-overlap').textContent = evalRes.overlapHrs > 0 ? formatDuration(evalRes.overlapHrs) : '0m';
+      document.getElementById('detail-climb-window').textContent = `${formatHour(evalRes.climbStart)} – ${formatHour(evalRes.climbEnd)}`;
+
+      const peakHiEl = document.getElementById('detail-peak-hi');
+      peakHiEl.textContent = `${evalRes.peakClimbHI}°F`;
+      peakHiEl.className = `text-sm font-bold mt-0.5 tabular-nums ${
+        evalRes.peakClimbHI >= 88 ? 'text-red-600' : evalRes.peakClimbHI >= 82 ? 'text-amber-600' : 'text-blue-600'
+      }`;
+
+      // Dynamic Recommendation Banner
+      const banner = document.getElementById('detail-rec-banner');
+      const recTitle = document.getElementById('detail-rec-title');
+      const recBody = document.getElementById('detail-rec-body');
+      const safeStart = findRecommendedStart(trail);
+
+      if (evalRes.tier === 3) {
+        banner.className = 'rounded-xl border p-3 mb-3.5 text-xs leading-relaxed bg-red-50 border-red-200 text-red-900';
+        recTitle.textContent = 'High Thermal Risk: ';
+        const climbDesc = trail.profile === 'Descend-First' ? 'Return climb out of the valley' : 'Sustained heavy climbing';
+        const tip = safeStart !== null
+          ? `Try starting by ${formatHour(safeStart)} to avoid peak afternoon heat.`
+          : 'Start before dawn or choose a shorter route during summer heat.';
+        recBody.textContent = `${climbDesc} overlaps peak afternoon heat (12–4 PM) at ${evalRes.peakClimbHI}°F HI. ${tip}`;
+      } else if (evalRes.tier === 2) {
+        banner.className = 'rounded-xl border p-3 mb-3.5 text-xs leading-relaxed bg-amber-50 border-amber-200 text-amber-950';
+        recTitle.textContent = 'Moderate Thermal Risk: ';
+        recBody.textContent = evalRes.overlapHrs > 0
+          ? `Part of your climb (${formatDuration(evalRes.overlapHrs)}) enters the 12–4 PM heat window (${evalRes.peakClimbHI}°F HI). Carry extra electrolytes and monitor pacing.`
+          : `Substantial elevation gain (${Math.round(trail.gain_ft).toLocaleString()} ft) creates notable metabolic heat even outside peak hours.`;
+      } else {
+        banner.className = 'rounded-xl border p-3 mb-3.5 text-xs leading-relaxed bg-emerald-50 border-emerald-200 text-emerald-950';
+        recTitle.textContent = 'Low Thermal Risk: ';
+        recBody.textContent = evalRes.overlapHrs === 0
+          ? `Heavy climbing completes outside the 12:00 PM–4:00 PM peak heat hazard window (${evalRes.peakClimbHI}°F climb HI).`
+          : `Lower elevation gain and manageable climb Heat Index (${evalRes.peakClimbHI}°F) keep thermal exertion in the safe zone.`;
+      }
+
+      renderElevationChart(trail, evalRes);
+    }
+
+    function updateUI() {
+      updateTimeHeader();
+      renderMapMarkers();
+      updateSummaryCard();
+      updateInspector();
+    }
+
+    // =========================================================================
+    // 5. PLAY / PAUSE ANIMATION & EVENT LISTENERS
+    // =========================================================================
+
+    function togglePlay() {
+      state.isPlaying = !state.isPlaying;
+      const playIcon = document.getElementById('icon-play');
+      const pauseIcon = document.getElementById('icon-pause');
+
+      if (state.isPlaying) {
+        playIcon.classList.add('hidden');
+        pauseIcon.classList.remove('hidden');
+        if (state.startHour >= 16.0) state.startHour = 5.0;
+
+        state.playTimer = setInterval(() => {
+          state.startHour += 0.25;
+          if (state.startHour > 16.0) {
+            state.startHour = 5.0;
+          }
+          updateUI();
+        }, 380);
+      } else {
+        playIcon.classList.remove('hidden');
+        pauseIcon.classList.add('hidden');
+        clearInterval(state.playTimer);
+        state.playTimer = null;
+      }
+    }
+
+    function stopPlay() {
+      if (state.isPlaying) togglePlay();
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function bindEvents() {
+      // Time Scrubber
+      document.getElementById('time-slider').addEventListener('input', e => {
+        stopPlay();
+        state.startHour = parseFloat(e.target.value);
+        updateUI();
+      });
+
+      // Play / Pause Button
+      document.getElementById('btn-play-pause').addEventListener('click', togglePlay);
+
+      // Quick Presets
+      document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          stopPlay();
+          state.startHour = parseFloat(btn.dataset.preset);
+          updateUI();
+        });
+      });
+
+      // Trail Name Search
+      document.getElementById('trail-search').addEventListener('input', e => {
+        state.searchQuery = e.target.value;
+        renderMapMarkers();
+        updateSummaryCard();
+      });
+
+      // District Dropdown
+      document.getElementById('district-select').addEventListener('change', e => {
+        state.filterDistrict = e.target.value;
+        renderMapMarkers();
+        updateSummaryCard();
+      });
+
+      // Profile Filter Pills
+      document.querySelectorAll('.profile-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.filterProfile = btn.dataset.profile;
+          document.querySelectorAll('.profile-pill').forEach(p => {
+            p.className = p === btn
+              ? 'profile-pill px-2.5 py-1 rounded-lg text-xs font-medium bg-[#163828] text-white transition'
+              : 'profile-pill px-2.5 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+          });
+          renderMapMarkers();
+          updateSummaryCard();
+        });
+      });
+
+      // Leaflet resize handler
+      window.addEventListener('resize', () => {
+        if (state.map) state.map.invalidateSize();
+      });
+    }
+
+    // Bootstrap Application
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      bindEvents();
+      updateUI();
+    });
+  </script>
+</body>
+</html>
